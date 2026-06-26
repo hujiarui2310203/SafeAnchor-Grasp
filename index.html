@@ -338,8 +338,30 @@
             <p class="eyebrow">Videos</p>
             <h2>Real grasp execution examples</h2>
             <p class="body-copy">
-              Four hardware videos demonstrate the SafeAnchor-Grasp output being executed by the UR arm and Allegro dexterous hand.
+              Paired examples compare the Raw Grasp prediction with the corresponding UR arm and Allegro dexterous-hand execution.
             </p>
+          </div>
+
+          <div class="paired-video" aria-label="Paired Raw Grasp and UR execution videos">
+            <div class="paired-video__stage">
+              <figure>
+                <video id="pairedRawVideo" controls muted playsinline preload="metadata" src="assets/videos/paired-raw-01.mp4"></video>
+                <figcaption>Raw Grasp</figcaption>
+              </figure>
+              <figure>
+                <video id="pairedUrVideo" controls muted playsinline preload="metadata" src="assets/videos/paired-ur-01.mp4"></video>
+                <figcaption>UR Execution</figcaption>
+              </figure>
+            </div>
+            <div class="paired-video__controls" aria-label="Video scene navigation">
+              <button type="button" id="prevPair" aria-label="Previous video pair">Previous</button>
+              <button type="button" id="nextPair" aria-label="Next video pair">Next</button>
+            </div>
+          </div>
+
+          <div class="video-section">
+            <h3>Additional real grasp demos</h3>
+            <p class="body-copy">Hardware videos demonstrate SafeAnchor-Grasp outputs being executed by the UR arm and Allegro dexterous hand.</p>
           </div>
 
           <div class="video-grid" aria-label="Real grasp execution videos">
@@ -386,5 +408,33 @@
         <span>Static project page generated from manuscript figures and real grasp videos.</span>
       </div>
     </footer>
+    <script>
+      const pairedVideos = [
+        { raw: "assets/videos/paired-raw-01.mp4", ur: "assets/videos/paired-ur-01.mp4" },
+        { raw: "assets/videos/paired-raw-02.mp4", ur: "assets/videos/paired-ur-02.mp4" },
+        { raw: "assets/videos/paired-raw-03.mp4", ur: "assets/videos/paired-ur-03.mp4" },
+        { raw: "assets/videos/paired-raw-04.mp4", ur: "assets/videos/paired-ur-04.mp4" },
+        { raw: "assets/videos/paired-raw-05.mp4", ur: "assets/videos/paired-ur-05.mp4" }
+      ];
+
+      const rawVideo = document.getElementById("pairedRawVideo");
+      const urVideo = document.getElementById("pairedUrVideo");
+      const prevPair = document.getElementById("prevPair");
+      const nextPair = document.getElementById("nextPair");
+      let activePair = 0;
+
+      function showVideoPair(nextIndex) {
+        activePair = (nextIndex + pairedVideos.length) % pairedVideos.length;
+        rawVideo.pause();
+        urVideo.pause();
+        rawVideo.src = pairedVideos[activePair].raw;
+        urVideo.src = pairedVideos[activePair].ur;
+        rawVideo.load();
+        urVideo.load();
+      }
+
+      prevPair.addEventListener("click", () => showVideoPair(activePair - 1));
+      nextPair.addEventListener("click", () => showVideoPair(activePair + 1));
+    </script>
   </body>
 </html>
