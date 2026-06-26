@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeAnchor-Grasp</title>
+    <meta name="description" content="Project page for SafeAnchor-Grasp, a same-object safe enhancement framework for dexterous grasping in cluttered multi-object scenes.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="topbar" aria-label="Project navigation">
+        <a class="brand" href="#">SafeAnchor-Grasp</a>
+        <div class="navlinks">
+          <a href="#abstract">Abstract</a>
+          <a href="#method">Method</a>
+          <a href="#results">Results</a>
+          <a href="#robot">Robot</a>
+          <a href="#videos">Videos</a>
+          <a href="#citation">Citation</a>
+        </div>
+      </nav>
+
+      <div class="hero__content">
+        <p class="venue">Same-object safe enhancement for dexterous grasping</p>
+        <h1>SafeAnchor-Grasp</h1>
+        <p class="subtitle">
+          A lightweight second-stage framework that reuses a Raw Grasp prior, expands same-object candidates with AnchorLift, and applies Rescue-Risk Gate for risk-aware replacement in cluttered multi-object scenes.
+        </p>
+        <div class="actions" aria-label="Project links">
+          <a class="button button--primary" href="assets/manuscript.tex">Manuscript Source</a>
+          <a class="button" href="#videos">Watch Videos</a>
+          <a class="button" href="https://github.com/hujiarui2310203">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" id="abstract">
+        <div class="section__inner two-column">
+          <div>
+            <p class="eyebrow">Abstract</p>
+            <h2>Risk-controlled same-object enhancement</h2>
+          </div>
+          <p class="lead">
+            Dexterous grasping in cluttered multi-object scenes requires more than a geometrically plausible hand pose. The grasp must remain stable during lifting and holding. SafeAnchor-Grasp reuses existing visual grasping priors and performs low-cost same-object second-stage enhancement. AnchorLift binds Raw Grasp to the target object as an anchor seed and generates an AnchorLift candidate from target-local geometry. Rescue-Risk Gate then models Raw Grasp and the AnchorLift candidate as a pair and estimates candidate success, rescue potential, and degradation risk. On GraspNet-1Billion, SafeAnchor-Grasp reaches a final mean success of 0.9322, improving over Raw Grasp by 0.0451 while replacing only about 12 percent of original predictions.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section--muted">
+        <div class="section__inner">
+          <p class="eyebrow">Core Message</p>
+          <div class="claim">
+            The method improves difficult grasps by replacing only a small, same-object, low-risk subset instead of overwriting every Raw Grasp prediction.
+          </div>
+          <div class="highlight-grid" aria-label="Project highlights">
+            <article class="highlight-item">
+              <span class="index">01</span>
+              <h3>Raw Grasp Anchor</h3>
+              <p>Preserves target-object identity and the useful grasp prior from the original visual grasping system.</p>
+            </article>
+            <article class="highlight-item">
+              <span class="index">02</span>
+              <h3>AnchorLift</h3>
+              <p>Expands the same-object candidate space under anchor constraints instead of acting as a simple local refinement.</p>
+            </article>
+            <article class="highlight-item">
+              <span class="index">03</span>
+              <h3>HSF, SSF, RPF</h3>
+              <p>Provides proxy diagnostic fields for hand structure, surface support, and execution-risk analysis.</p>
+            </article>
+            <article class="highlight-item">
+              <span class="index">04</span>
+              <h3>R<sup>2</sup>-Gate</h3>
+              <p>Uses a learned intervention policy to select replacements under same-object, low-risk, and budget constraints.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="method">
+        <div class="section__inner">
+          <div class="section-heading">
+            <p class="eyebrow">Method</p>
+            <h2>Raw Grasp anchor, same-object candidate expansion, and risk-aware replacement</h2>
+          </div>
+
+          <figure class="wide-figure">
+            <img src="assets/images/figure3.png" alt="Complete SafeAnchor-Grasp pipeline">
+            <figcaption>Complete pipeline. Raw Grasp is matched to the original target object, AnchorLift generates a same-object candidate, and R<sup>2</sup>-Gate makes the final keep-or-replace decision.</figcaption>
+          </figure>
+
+          <div class="method-row">
+            <div class="method-copy">
+              <h3>AnchorLift candidate generation</h3>
+              <p>
+                AnchorLift takes target-object point clouds, target-local point clouds, Raw Grasp pose, and hand qpos as inputs. The point cloud feature Fp, local geometry feature FL, pose-anchor feature Fpo, and joint-configuration feature FQ are fused and decoded into an AnchorLift candidate bound to the same target object.
+              </p>
+            </div>
+            <figure>
+              <img src="assets/images/figure2.png" alt="AnchorLift and R2-Gate diagnostic fields">
+              <figcaption>Core intermediate states. HSF, SSF, and RPF visualize hand-structure response, target-surface support, and execution-risk proxy signals.</figcaption>
+            </figure>
+          </div>
+
+          <div class="method-row method-row--reverse">
+            <figure>
+              <img src="assets/images/figure5.png" alt="AnchorLift intermediate states">
+              <figcaption>AnchorLift intermediate states. The figure shows same-object binding ability and physics-aware diagnostic capability across different objects.</figcaption>
+            </figure>
+            <div class="method-copy">
+              <h3>Learned intervention policy</h3>
+              <p>
+                R<sup>2</sup>-Gate evaluates replacement rather than candidate quality in isolation. It predicts candidate success, rescue potential, and degradation risk from Raw Grasp, AnchorLift candidate, delta features, and object-local cues. The capped rule keeps Raw Grasp by default and allows replacement only for same-object, low-risk, in-budget candidates.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--muted" id="results">
+        <div class="section__inner">
+          <div class="section-heading">
+            <p class="eyebrow">Results</p>
+            <h2>Small replacement rate, clear gains on hard scenes</h2>
+          </div>
+
+          <div class="metric-row">
+            <div>
+              <span class="metric">0.9322</span>
+              <p>Final mean success on the 90-scene GraspNet-1Billion test.</p>
+            </div>
+            <div>
+              <span class="metric">+0.1037</span>
+              <p>Mean improvement on 26 hard scenes where Raw Grasp is below 0.85.</p>
+            </div>
+            <div>
+              <span class="metric">11.9965%</span>
+              <p>Selected replacement rate while preserving the same target object.</p>
+            </div>
+          </div>
+
+          <figure class="wide-figure">
+            <img src="assets/images/figure4.png" alt="Hard-scene Raw Grasp failure and SafeAnchor-Grasp success">
+            <figcaption>Hard-scene Raw Grasp failure versus SafeAnchor-Grasp success. Red hands indicate Raw Grasp failure, while green hands indicate the selected same-object AnchorLift candidate.</figcaption>
+          </figure>
+
+          <div class="table-grid">
+            <div class="table-block">
+              <h3>Overall and hard-scene performance</h3>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Set</th>
+                      <th>Scenes</th>
+                      <th>Raw</th>
+                      <th>Ours</th>
+                      <th>Gain</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="highlight">
+                      <td>Full benchmark</td>
+                      <td>90</td>
+                      <td>0.8871</td>
+                      <td>0.9322</td>
+                      <td>+0.0451</td>
+                    </tr>
+                    <tr>
+                      <td>Hard scenes</td>
+                      <td>26</td>
+                      <td>0.7237</td>
+                      <td>0.8274</td>
+                      <td>+0.1037</td>
+                    </tr>
+                    <tr>
+                      <td>Best-10 hard</td>
+                      <td>10</td>
+                      <td>0.6566</td>
+                      <td>0.9008</td>
+                      <td>+0.2441</td>
+                    </tr>
+                    <tr>
+                      <td>Best hard cases</td>
+                      <td>6</td>
+                      <td>0.6113</td>
+                      <td>0.9277</td>
+                      <td>+0.3164</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="table-block">
+              <h3>R<sup>2</sup>-Gate selection behavior</h3>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="highlight">
+                      <td>Selected replacement rate</td>
+                      <td>0.119965</td>
+                    </tr>
+                    <tr>
+                      <td>Same-object rate</td>
+                      <td>1.0000</td>
+                    </tr>
+                    <tr>
+                      <td>Global budget</td>
+                      <td>0.12</td>
+                    </tr>
+                    <tr>
+                      <td>Per-scene budget</td>
+                      <td>0.15</td>
+                    </tr>
+                    <tr>
+                      <td>Validation rescue</td>
+                      <td>49</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-grid table-grid--wide">
+            <div class="table-block">
+              <h3>GraspNet-1Billion comparison</h3>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th>Ratio</th>
+                      <th>Dense</th>
+                      <th>Random</th>
+                      <th>Loose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>DexGraspNet2.0 / Raw Grasp</td>
+                      <td>1/1000</td>
+                      <td>83.3</td>
+                      <td>79.5</td>
+                      <td>73.9</td>
+                    </tr>
+                    <tr>
+                      <td>CADGrasp</td>
+                      <td>1/1000</td>
+                      <td>89.5</td>
+                      <td>87.2</td>
+                      <td>81.6</td>
+                    </tr>
+                    <tr class="highlight">
+                      <td>SafeAnchor-Grasp</td>
+                      <td>1/1000</td>
+                      <td>93.2</td>
+                      <td>91.1</td>
+                      <td>85.6</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="table-block">
+              <h3>Same-object candidate ceiling</h3>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Split</th>
+                      <th>Pairs</th>
+                      <th>Raw</th>
+                      <th>AnchorLift</th>
+                      <th>Ceiling</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Train</td>
+                      <td>23028</td>
+                      <td>0.8738</td>
+                      <td>0.9361</td>
+                      <td><strong>0.9819</strong></td>
+                    </tr>
+                    <tr class="highlight">
+                      <td>Val</td>
+                      <td>2552</td>
+                      <td>0.8954</td>
+                      <td>0.9259</td>
+                      <td><strong>0.9835</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="robot">
+        <div class="section__inner">
+          <div class="section-heading">
+            <p class="eyebrow">Robot Experiments</p>
+            <h2>Simulation and real robot execution pipeline</h2>
+          </div>
+
+          <div class="media-grid">
+            <figure>
+              <img src="assets/images/figure6.png" alt="UR arm and dexterous-hand simulated execution">
+              <figcaption>UR arm and dexterous-hand simulated execution using SafeAnchor-Grasp outputs.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/images/figure8.png" alt="Real robotic arm-dexterous hand grasping platform">
+              <figcaption>Real robot platform. RealSense D455 acquires scene images and point clouds, SAM segments candidate objects, and the UR arm moves the Allegro hand to the grasping pose.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/images/figure7.png" alt="Real-robot execution demonstration">
+              <figcaption>Real-robot execution demonstration in single-object and cluttered multi-object scenes.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--muted" id="videos">
+        <div class="section__inner">
+          <div class="section-heading">
+            <p class="eyebrow">Videos</p>
+            <h2>Real grasp execution examples</h2>
+            <p class="body-copy">
+              Four hardware videos demonstrate the SafeAnchor-Grasp output being executed by the UR arm and Allegro dexterous hand.
+            </p>
+          </div>
+
+          <div class="video-grid" aria-label="Real grasp execution videos">
+            <figure>
+              <video controls muted preload="metadata" src="assets/videos/demo1.mp4"></video>
+              <figcaption>Real grasp demo 1</figcaption>
+            </figure>
+            <figure>
+              <video controls muted preload="metadata" src="assets/videos/demo2.mp4"></video>
+              <figcaption>Real grasp demo 2</figcaption>
+            </figure>
+            <figure>
+              <video controls muted preload="metadata" src="assets/videos/demo3.mp4"></video>
+              <figcaption>Real grasp demo 3</figcaption>
+            </figure>
+            <figure>
+              <video controls muted preload="metadata" src="assets/videos/demo4.mp4"></video>
+              <figcaption>Real grasp demo 4</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="citation">
+        <div class="section__inner two-column">
+          <div>
+            <p class="eyebrow">Citation</p>
+            <h2>BibTeX</h2>
+            <p class="body-copy">Update author and venue metadata before public release.</p>
+          </div>
+          <pre><code>@article{safeanchor_grasp_2026,
+  title = {SafeAnchor-Grasp: Same-Object Safe Enhancement for Dexterous Grasping in Cluttered Multi-Object Scenes},
+  author = {Anonymous Authors},
+  journal = {Manuscript under preparation},
+  year = {2026}
+}</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="section__inner footer__inner">
+        <span>SafeAnchor-Grasp</span>
+        <span>Static project page generated from manuscript figures and real grasp videos.</span>
+      </div>
+    </footer>
+  </body>
+</html>

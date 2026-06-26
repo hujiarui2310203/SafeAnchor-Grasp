@@ -1,0 +1,530 @@
+
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+\documentclass[lettersize,journal]{IEEEtran}
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{picinpar}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{flushend}
+\usepackage[latin1]{inputenc}
+\usepackage{colortbl}
+\usepackage{soul}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{color}
+\usepackage{alltt}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumerate}
+\usepackage{siunitx}
+\usepackage{breakurl}
+\usepackage{epstopdf}
+\usepackage{pbox}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{cite}
+\usepackage{xcolor}
+\usepackage{url}
+
+\title{SafeAnchor-Grasp: Same-Object Safe Enhancement for Dexterous Grasping in Cluttered Multi-Object Scenes}
+
+% \author{Anonymous Authors%
+% \thanks{This work is prepared in the style of IEEE Robotics and Automation Letters (RA-L).}%
+% }
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Dexterous hand grasping is a key capability for moving robots from simple picking toward complex manipulation. It can adapt to complex object geometry and provide more flexible object constraints for downstream manipulation tasks. However, in cluttered multi-object scenes, dexterous grasping requires more than predicting a geometrically feasible hand pose; the grasp must also remain stable during lifting and holding. Existing grasping methods can already predict reasonable dexterous grasp candidates from scene observations, but these candidates may still fail because of insufficient local contact, unstable closure, or weak lifting stability. Therefore, this paper starts from reusing existing visual grasping priors and performs low-cost same-object second-stage enhancement on the original candidates.
+We propose SafeAnchor-Grasp, a same-object safe enhancement framework for cluttered multi-object scenes. The framework consists of two core modules: AnchorLift and Rescue-Risk Gate (R\textsuperscript{2}-Gate). AnchorLift binds  {Raw Grasp} to the target object as an anchor seed and combines it with a target-local point cloud to generate a  {AnchorLift candidate}, thereby improving contact quality, hand posture and lifting potential on top of the existing grasping prior. R\textsuperscript{2}-Gate then models  {Raw Grasp} and the  {AnchorLift candidate} as a pair to estimate candidate success probability,  {rescue potential} and  {degradation risk}. The final output achieves risk-controlled performance improvement.
+On GraspNet-1Billion, AnchorLift is clearly complementary to  {Raw Grasp} and raises the average same-object candidate ceiling to approximately 0.98. After  {risk-aware replacement}, the final mean grasp success reaches 0.9322, improving over  {Raw Grasp} by 0.0451 while replacing only about 12\% of original predictions. These results show that SafeAnchor-Grasp can reuse existing grasping priors through lightweight two-stage optimization and improve same-object grasping ability in a large candidate space.
+\end{abstract}
+\def\abstractname{Note to Practitioners}
+\begin{abstract}
+In practical industrial and service-robot scenarios, such as warehouse sorting, domestic service and dexterous assembly, robots often rely on fixed-view vision systems to generate grasping and manipulation decisions. However, in real-world environments, target objects are frequently partially occluded or tightly stacked with neighboring objects. As a result, grasp predictions from a single visual observation may fall into positions with insufficient local contact or unstable hand-object structure, leading to lifting failure, slippage during execution, or collision risk. SafeAnchor-Grasp does not require retraining a more complex grasp generation model from scratch. Instead, it uses the high-confidence  {Raw Grasp} provided by an existing grasping system as a stable basis and generates structurally constrained  {AnchorLift candidates} on the same target object. A risk-aware decision mechanism then evaluates the relative benefit and potential risk, and performs limited replacement only when the candidate satisfies low-risk and same-object constraints. In engineering applications, SafeAnchor-Grasp can serve as a plug-and-play enhancement module for existing robotic grasping systems. Without modifying the original perception or control pipeline, it can improve grasp success in difficult scenes, especially in dense multi-object environments. The method reduces failures caused by insufficient local contact or pose deviation and provides more stable grasp inputs for downstream manipulation tasks.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Dexterous grasping, cluttered scenes, same-object enhancement, risk-aware replacement, robot grasping.
+\end{IEEEkeywords}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure1}
+  \caption{Overall goal and scene-level effect of SafeAnchor-Grasp. The curve shows the scene-level improvement over the  {Raw Grasp}. In the same scene and on the same target object, the  {Raw Grasp} is close to the target but fails during lifting, while the selected  {AnchorLift candidate} achieves a more stable lift.}
+  \label{fig:intro}
+\end{figure}
+\section{Introduction}
+
+Dexterous hand grasping is a key capability for moving robots from simple picking toward complex manipulation. Compared with conventional two-finger grippers, multi-finger dexterous hands have higher degrees of freedom, can form richer contact patterns on object surfaces and can adapt to complex geometry of irregular objects. This capability not only determines whether a robot can stably pick up an object, but also affects the quality of object constraints in subsequent placing, handover, transport and fine manipulation. However, dexterous grasping in cluttered multi-object scenes remains difficult. Occlusion, stacking, incomplete local point clouds and interference from neighboring objects restrict the accessible space of the palm and fingers and weaken the contact quality and lifting stability of grasp candidates. A grasp that appears geometrically plausible may still fail during execution because of insufficient contact, unstable closure, or post-lift instability. In complex scenes, grasp failure does not always come from selecting a completely wrong target. More often, the grasp is already close to the target object, but still fails to form sufficiently stable execution contact.
+
+Recent dexterous grasp generation methods have substantially improved the ability to predict grasp poses from scene observations. With point-cloud features and generative models, existing methods can produce strong initial grasp proposals in complex scenes. When a system already has a usable large set of initial grasps, training a larger grasp generator from scratch is not the only choice. A more practical question is whether existing grasping priors can be reused for lightweight second-stage enhancement, thereby improving contact, posture and lifting ability on the same target object. At the same time, directly introducing new learned candidates and unconditionally replacing  {Raw Grasp} also introduces risk. A new candidate may provide better hand posture and contact location, but it may also deviate from the original target or destroy a grasp that would otherwise execute successfully. Therefore, dexterous grasp optimization in complex scenes should not only focus on generating a new grasp, but also determine whether the new candidate is worth replacing  {Raw Grasp}.
+
+Based on these observations, we propose \textbf{SafeAnchor-Grasp}, a grasp enhancement framework for cluttered multi-object scenes. SafeAnchor-Grasp treats an existing grasp as a reusable anchor prior, generates an  {AnchorLift candidate} on the same target object and performs reliable candidate replacement through risk-aware selection. Specifically, \textbf{AnchorLift} first binds  {Raw Grasp} to its target object, constructs a local point-cloud representation around the target object and uses  {Raw Grasp} as an anchor seed to generate an  {AnchorLift candidate}. The goal of this module is not to regenerate a completely unconstrained grasp. Instead, it enhances hand posture, contact location and lifting potential while preserving the original target object and initial grasping prior, thereby raising the capability ceiling of the same-object candidate space.
+
+However, candidate enhancement itself is not equivalent to final performance improvement. We therefore further propose \textbf{R\textsuperscript{2}-Gate}, or Rescue-Risk Gate, which compares  {Raw Grasp} and the  {AnchorLift candidate} as a pair and estimates candidate success probability,  {rescue potential} and  {degradation risk}. Replacement is allowed only when the  {AnchorLift candidate} satisfies the same-object constraint, low  {degradation risk} and replacement budget. With this design, SafeAnchor-Grasp does not pursue maximum candidate usage. Instead, it converts a small number of high-confidence  {AnchorLift candidates} into stable execution gains.
+
+As shown in Fig.~\ref{fig:intro}, we sort scenes by  {Raw Grasp} scene-level success. In the hard-scene region, SafeAnchor-Grasp converts weak-lift failures of  {Raw Grasp} into more stable execution results without changing the target object and brings consistent success-rate improvements at the full-scene level.
+
+The main contributions of this paper are as follows:
+\begin{enumerate}
+    \item We propose \textbf{SafeAnchor-Grasp}, a same-object safe enhancement framework. This paper formulates dexterous grasp optimization in cluttered multi-object scenes as a lightweight two-stage enhancement process: it reuses grasping priors and improves candidate capability on the same target object instead of training a larger generator from scratch or performing unconditional replacement.
+    \item We design \textbf{AnchorLift} as a candidate enhancement module. AnchorLift uses  {Raw Grasp} as an anchor seed and combines it with the target-object local point cloud to generate a  {AnchorLift candidate}. While preserving the original target object and initial grasping prior, it improves contact quality, hand posture and lifting potential, thereby increasing the capability ceiling of the same-object candidate space.
+    \item {\textbf{We propose HSF/SSF/RPF as three physics-aware capabilities for structured AnchorLift supervision.} HSF (Hand-Structure Field) characterizes the spatial response of the hand skeleton and finger structure, SSF (Surface-Support Field) describes local support relations near the target surface and RPF (Risk-Proxy Field) models proxy signals of execution risk that may be introduced by a candidate.}
+    \item We introduce \textbf{Rescue-Risk Gate (R\textsuperscript{2}-Gate)} as a risk-aware selection mechanism. R\textsuperscript{2}-Gate models  {Raw Grasp} and the  {AnchorLift candidate} as a pair, explicitly estimates candidate success probability,  {rescue potential} and  {degradation risk} and selects only a small number of high-confidence candidates for replacement through same-object constraints, low  {degradation risk} and replacement budgets. This enables stable improvement of grasp success on the 90-scene GraspNet-1Billion test with a low replacement rate.
+\end{enumerate}
+\section{Related Work}
+
+\subsection{Dexterous Grasp Generation in Cluttered Scenes}
+
+Visual grasping research has long studied how to generate executable grasp candidates from point clouds. Early methods mainly focused on parallel-jaw grippers and planned grasps by detecting 6-DoF grasp poses, predicting grasp quality, or evaluating local point clouds, including GPD \cite{r1}, Dex-Net \cite{r2}, GG-CNN \cite{r3}, 6-DoF GraspNet \cite{r4} and PointNetGPD \cite{r5}. Large-scale datasets and benchmarks further advanced cluttered-scene grasping. Dex-Net 4.0 \cite{r6}, GraspNet-1Billion \cite{r7}, ACRONYM \cite{r10}, Contact-GraspNet \cite{r9}, VGN \cite{r8} and AnyGrasp \cite{r11} demonstrate that learning-based methods can generate stable candidates in complex scenes. Dexterous hand grasping is more difficult than parallel-jaw grasping because the system must predict both the palm pose and a high-dimensional joint configuration while forming stable multi-finger contacts during closure and lifting. Recent work uses large-scale simulation data, contact representations, diffusion models and transformer set prediction to learn dexterous grasp distributions. DexGraspNet \cite{r12}, DexGraspNet 2.0 \cite{r22}, DexDiffuser \cite{r19}, DexGrasp Anything \cite{r24} and related methods extend dexterous grasp candidate spaces in complex scenes from different perspectives. These methods mainly aim to enlarge or improve the grasp candidate space. In contrast, this paper does not treat the generator output directly as the final grasp. Instead, it uses AnchorLift as a same-object enhancement module that generates  {AnchorLift candidates} bound to  {Raw Grasp}. Final performance depends on whether R\textsuperscript{2}-Gate can identify which  {AnchorLift candidates} should replace  {Raw Grasp} and which  {Raw Grasp} samples should be retained.
+
+\subsection{Grasp Evaluation, Candidate Refinement, and Risk-Controlled Replacement}
+
+A geometrically reasonable grasp candidate does not necessarily succeed during execution. Therefore, many studies further investigate grasp quality evaluation, candidate refinement and test-time optimization. For parallel-jaw grasping, Dex-Net 2.0 uses GQ-CNN to predict grasp quality, PointNetGPD evaluates local gripper point clouds and 6-DoF GraspNet combines grasp sampling with evaluator refinement by filtering and adjusting samples with a learned evaluator. For human or dexterous hand grasping, ContactOpt \cite{r16}, GraspTTA, ContactGen \cite{r18} and DexDiffuser \cite{r19} improve candidate quality from contact consistency, hand-object relation optimization, generative refinement, or evaluator-guided sampling. CADGrasp further uses contact- and collision-aware intermediate representations to improve contact and collision avoidance for dexterous grasping in cluttered scenes. These studies show that a grasping system still needs additional evaluation or refinement after candidate generation. However, existing methods usually ask whether a single candidate itself is better, for example whether it has a higher quality score, a more reasonable contact region, lower collision risk, or stronger hand-object geometric consistency. For a system that already has a strong  {Raw Grasp}, judging only the absolute quality of a new candidate is insufficient. A new candidate may improve contact and posture in failure cases and therefore rescue the original failure, but it may also introduce pose deviation, unstable closure, or local contact degradation in cases where  {Raw Grasp} would have succeeded. In addition, candidate selection in cluttered multi-object scenes faces an object-consistency issue. If arbitrary candidate-pool selection is allowed, a higher oracle success may come from switching to an easier object rather than truly improving the grasp on the original target object.
+\section{Method}
+
+\subsection{Overview: SafeAnchor-Grasp}
+
+Given an initial visual grasp in a cluttered multi-object scene, SafeAnchor-Grasp does not discard the original output and does not reselect an arbitrary successful grasp from a candidate pool. Instead, it treats  {Raw Grasp} as a reusable anchor prior. The system first binds  {Raw Grasp} to its original target object, then uses AnchorLift to generate an  {AnchorLift candidate} on the same object. Since an  {AnchorLift candidate} is not necessarily safer than  {Raw Grasp}, R\textsuperscript{2}-Gate evaluates the replacement risk between the  {Raw Grasp} and the  {AnchorLift candidate} as a pair. The  {capped replacement rule} keeps  {Raw Grasp} by default and replaces it only when the candidate satisfies same-object and low  {degradation risk} constraints.
+
+This design reframes the problem from generating a new grasp to deciding when intervention is safe. Existing visual grasping outputs usually contain useful target-selection and geometric priors. Direct generation from scratch or unconditional replacement can waste these priors and may destroy  {Raw Grasp} samples that would otherwise succeed. The core idea of SafeAnchor-Grasp is that AnchorLift raises the same-object candidate ceiling, while R\textsuperscript{2}-Gate converts a small number of low-risk  {AnchorLift candidates} into actual execution gains.
+
+We represent each dexterous grasp as a 25-dimensional vector,
+\begin{equation}
+g_i = [t_i, r_i, q_i] \in \mathbb{R}^{25},
+\quad
+t_i \in \mathbb{R}^{3},\quad
+r_i \in \mathbb{R}^{6},\quad
+q_i \in \mathbb{R}^{16},
+\label{eq:grasp_representation}
+\end{equation}
+where $t_i$ is the hand translation, $r_i$ is the 6D rotation representation and $q_i$ is the 16-dimensional dexterous-hand joint configuration.  {Raw Grasp} samples,  {AnchorLift candidates} and same-object supervision targets are all expressed in this representation.
+
+{ Figure~\ref{fig:diagnostic} compares  {Raw Grasp} and the  {AnchorLift candidate} selected by R\textsuperscript{2}-Gate on the same target object and visualizes three proxy diagnostic fields: HSF (Hand-Structure Field), SSF (Surface-Support Field) and RPF (Risk-Proxy Field). These fields are structured intermediate representations and auxiliary supervision signals introduced in AnchorLift. They are used to analyze whether the hand structure aligns with the target region, whether the target surface provides local support and whether the candidate may introduce execution risk. HSF/SSF/RPF are proxy-based diagnostic fields, not real tactile signals, contact forces, or physical force fields. Figure~\ref{fig:pipeline} further shows the complete pipeline, from target-object matching and data construction to AnchorLift candidate generation and R\textsuperscript{2}-Gate keep-or-replace decision.}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure2}
+  \caption{Core intermediate states of AnchorLift and R\textsuperscript{2}-Gate. The left side shows the original  {Raw Grasp} and the right side shows the AnchorLift candidate selected by R\textsuperscript{2}-Gate. { HSF, SSF and RPF visualize hand-structure response, target-surface support and potential execution-risk proxy signals, respectively.}}
+  \label{fig:diagnostic}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure3}
+  \caption{Complete pipeline of SafeAnchor-Grasp. (a)The data construction stage matches the  {Raw Grasp} to the original target object and builds same-object enhancement inputs. (b) {AnchorLift} uses the target point cloud, local point cloud,  {Raw Grasp} pose and qpos to generate a  {AnchorLift candidate}. (c)R\textsuperscript{2}-Gate compares  {Raw Grasp} and  {AnchorLift candidate} features, predicts success,  {rescue potential} and  {degradation risk} and makes a keep-or-replace decision.}
+  \label{fig:pipeline}
+\end{figure*}
+
+\subsection{Same-Object Anchor Binding and Dataset Construction}
+
+Same-object anchor binding is the boundary condition of SafeAnchor-Grasp. We first bind every  {Raw Grasp} to its original target object and treat this binding as a hard constraint for all subsequent candidate enhancement and  {risk-aware replacement}. Each  {Raw Grasp anchor} records scene id, view id, object id, object center,  {Raw Grasp} pose, hand qpos, raw confidence and available local point cloud. Final selection is allowed only between the  {Raw Grasp anchor} and the  {AnchorLift candidate} on the same target object; object-switching to an easier object is not allowed.
+
+For sample $i$, the same-object anchor is written as
+\begin{equation}
+b_i = (s_i, v_i, o_i, c_i, g_i^{0}),
+\quad
+g_i^{0}=[t_i^{0}, r_i^{0}, q_i^{0}],
+\label{eq:anchor_binding}
+\end{equation}
+where $s_i$ and $v_i$ denote scene and view indices, $o_i$ is the original target-object identity, $c_i$ is the object or crop center and $g_i^{0}$ is the  {Raw Grasp anchor}.
+
+The target-local point cloud is determined by object binding. This design ensures that AnchorLift inputs, training targets and final replacement are all centered around the object originally associated with  {Raw Grasp}. At the data-construction level, the selected object, multi-view or multi-ground-truth information, viewed-object point cloud,  {Raw Grasp} and local point cloud correspond to object identity, available same-object supervision, visible target points,  {Raw Grasp anchor} seed and local geometry input for AnchorLift. The key of this stage is not to expand arbitrary object candidates, but to establish a stable and reproducible input boundary for same-object enhancement.
+
+The target-local crop used by AnchorLift is defined by the  {Raw Grasp}-bound object,
+\begin{equation}
+P_i^{o} =
+\{p_k \in P_i \mid \mathrm{seg}(p_k)=o_i,\ 
+\|p_k-c_i\|_2 \le r_c \},
+\label{eq:target_crop}
+\end{equation}
+where $P_i$ is the scene point cloud, $\mathrm{seg}(p_k)$ denotes the object assignment of point $p_k$ and $r_c$ is the local crop radius. This definition prevents the candidate generation stage from silently switching to a different object.
+
+\subsection{AnchorLift: Anchor-Conditioned Candidate Enhancement}
+
+AnchorLift aims to raise the same-object candidate ceiling without discarding the  {Raw Grasp prior}. It uses  {Raw Grasp} as an anchor seed and adjusts hand posture, local contact location and joint configuration on the same target object, rather than generating an unconstrained grasp from scratch. Its inputs include target-object point cloud, target-local point cloud,  {Raw Grasp} pose,  {Raw Grasp} qpos and object binding information. Its output is a  {AnchorLift candidate}. This candidate is not the final output; it is passed to R\textsuperscript{2}-Gate to decide whether it should replace  {Raw Grasp}.
+
+{Importantly, AnchorLift should not be interpreted as a small local refinement of the raw pose or as a post-processing optimizer around the  {Raw Grasp}. Its goal is to expand the candidate space under a same-object anchor constraint: the  {Raw Grasp} provides target-object binding, a local geometric boundary and an initial grasping prior, while the  {AnchorLift candidate} can reorganize the contact region, hand posture and joint configuration on the same target object. Thus, AnchorLift is more precisely an anchor-conditioned same-object candidate expansion module rather than a conventional local refinement module.}
+
+We write the AnchorLift mapping as
+\begin{equation}
+g_i^{a} = f_{\theta}(P_i^{o}, g_i^{0}),
+\quad
+g_i^{a}=[t_i^{a}, r_i^{a}, q_i^{a}],
+\label{eq:anchorlift_generation}
+\end{equation}
+where $f_{\theta}$ generates a  {AnchorLift candidate} from the target-local geometry and  {Raw Grasp anchor} seed.
+
+AnchorLift uses a target-local point encoder, a seed-grasp encoder and a diffusion candidate decoder. To match the network structure in Fig.~\ref{fig:pipeline}, the AnchorLift input is decomposed into four feature branches. The target-object point cloud is encoded into the global target-geometry feature  {\textbf{$F_p$}}. The target-local point cloud is encoded into the local visible-geometry feature  {\textbf{$F_L$}}, which describes the target surface shape, local occlusion and surrounding clutter. The  {Raw Grasp} end-effector pose is encoded into the pose-anchor feature  {\textbf{$F_{po}$}} and the hand qpos is encoded into the joint-configuration feature  {\textbf{$F_Q$}}. Here,  {\textbf{$F_p$}} and  {\textbf{$F_L$}} provide geometric constraints from the target object and local environment, while  {\textbf{$F_{po}$}} and  {\textbf{$F_Q$}} preserve the end-effector pose and hand-joint priors already contained in  {Raw Grasp}. The four feature groups are fused and passed to the diffusion candidate decoder to generate an  {AnchorLift candidate} bound to the same target object. This structure allows the model to perform local enhancement around the  {Raw Grasp anchor} rather than searching the whole scene for arbitrary grasps.
+
+During training, AnchorLift uses same-object matched successful grasps as primary supervision and stabilizes candidate generation with several constraints. { We further organize these constraints into three proxy diagnostic fields. HSF constrains the hand skeleton, phalanges and keypoints to form a reasonable spatial structure; SSF encourages meaningful local support relations near the target surface; and RPF suppresses candidates with insufficient local support, excessive pose deviation, or likely execution failure. This design allows AnchorLift not only to generate  {AnchorLift candidates}, but also to provide interpretable intermediate diagnostic signals through structured proxy fields. Accordingly, the proxy-field loss terms in the structured AnchorLift objective are updated to HSF/SSF/RPF:}
+\begin{equation}
+\mathcal{L}_{\mathrm{Anchor}}
+=
+\lambda_{\mathrm{HSF}}\mathcal{L}_{\mathrm{HSF}}
++
+\lambda_{\mathrm{POS}}\mathcal{L}_{\mathrm{POS}}
++
+\lambda_{\mathrm{SSF}}\mathcal{L}_{\mathrm{SSF}}
++
+\lambda_{\mathrm{RPF}}\mathcal{L}_{\mathrm{RPF}}.
+\label{eq:anchorlift_loss}
+\end{equation}
+Here, $\mathcal{L}_{\mathrm{POS}}$ supervises pose and joint regression, { $\mathcal{L}_{\mathrm{HSF}}$ constrains hand-structure responses, $\mathcal{L}_{\mathrm{SSF}}$ encourages surface-support proximity and $\mathcal{L}_{\mathrm{RPF}}$ penalizes risk-proxy states.}
+
+{ Figure~\ref{fig:anchorlift} further uses HSF, SSF and RPF to show intermediate states of AnchorLift. These fields explain how the  {AnchorLift candidate} changes hand structure, surface support and potential execution-risk proxies on the same target object.}
+
+AnchorLift does not force the candidate change relative to  {Raw Grasp} to be zero. Instead, the  {Raw Grasp} seed input and same-object binding constrain candidate generation, while  {Raw Grasp}-to-candidate pose and qpos changes become risk features for R\textsuperscript{2}-Gate. The role of AnchorLift is to expand the same-object candidate ceiling, not to directly decide the final output.
+
+\subsection{Rescue-Risk Gate}
+
+Rescue-Risk Gate (R\textsuperscript{2}-Gate) evaluates whether replacing  {Raw Grasp} with the  {AnchorLift candidate} is safe, rather than judging candidate quality in isolation. For each sample, R\textsuperscript{2}-Gate builds a pairwise input from the  {Raw Grasp} and the  {AnchorLift candidate} and extracts four feature groups: a  {Raw Grasp} branch, a candidate branch, a delta branch and an object/local branch. The  {Raw Grasp} branch describes  {Raw Grasp} score, pose, qpos and local geometry. The candidate branch describes the  {AnchorLift candidate} source and pose. The delta branch describes relative changes in translation, rotation, qpos and score. The object/local branch describes the same-object indicator, object id, local point-cloud availability and clutter or local-geometry cues.
+
+The raw-to-candidate change is summarized by
+\begin{equation}
+\Delta_i =
+[
+\|t_i^{a}-t_i^{0}\|_2,\ 
+d_R(r_i^{a}, r_i^{0}),\ 
+\|q_i^{a}-q_i^{0}\|_2
+],
+\label{eq:delta_features}
+\end{equation}
+where $d_R(\cdot,\cdot)$ denotes the rotation distance in the chosen 6D rotation representation. These delta features make R\textsuperscript{2}-Gate sensitive to the risk of the replacement operation itself.
+
+R\textsuperscript{2}-Gate outputs three probabilities directly related to replacement: candidate success,  {rescue potential} and  {degradation risk}. Candidate success estimates whether the  {AnchorLift candidate} itself is likely to succeed.  {Rescue potential} estimates whether the candidate can rescue a failure of  {Raw Grasp}.  {Degradation risk} estimates whether replacement may destroy a  {Raw Grasp} that would otherwise succeed. Through this pairwise formulation, R\textsuperscript{2}-Gate explicitly considers the success possibility of the  {Raw Grasp anchor} and avoids treating the absolute score of the  {AnchorLift candidate} as replacement benefit.
+
+The pairwise prediction is written as
+\begin{equation}
+(p_i^{s}, p_i^{r}, p_i^{d})
+=
+h_{\psi}\!\left(
+\phi(g_i^{0}, g_i^{a}, P_i^{o}, \Delta_i, m_i)
+\right),
+\label{eq:r2gate_output}
+\end{equation}
+where $p_i^{s}$, $p_i^{r}$ and $p_i^{d}$ denote candidate success, rescue potential and  {degradation risk}, respectively and $m_i$ contains source confidence, object identity, local geometry cues and relative-pose metadata.
+
+The  {capped replacement rule} shown in Fig.~\ref{fig:pipeline} is the final decision layer of R\textsuperscript{2}-Gate, not an independent method module. R\textsuperscript{2}-Gate combines candidate success,  {rescue potential} and  {degradation risk} into a replacement decision under same-object check,  {degradation-risk threshold}, global replacement cap and per-scene replacement cap. If the candidate violates any condition, the system keeps  {Raw Grasp} by default. The deployment principle is to preserve the existing visual grasping prior by default and to replace  {Raw Grasp} only with a small number of low-risk, same-object, in-budget  {AnchorLift candidates}.
+
+{Importantly, R\textsuperscript{2}-Gate is implemented as a learned intervention policy rather than a hand-crafted heuristic filter, as all decision components are trained from raw-candidate pairwise outcomes instead of manually designed scoring rules.}
+
+The final configuration uses fixed parameters:  {degradation-risk threshold} 0.5, global cap 12\% and per-scene cap 15\%. In the final export, the actual  {AnchorLift candidate} selection rate is 11.9965\%, the maximum per-scene replacement rate remains below 15\% and the same-object rate is 1.0. This capped intervention does not aim to replace more candidates or select the globally highest-scoring candidate. It converts only a small subset of same-object, low-risk, in-budget  {AnchorLift candidates} into final predictions, improving difficult scenes while preserving the stability of  {Raw Grasp}.
+
+R\textsuperscript{2}-Gate is trained with  {Raw Grasp/AnchorLift candidate} pairwise execution labels for success,  {rescue potential} and  {degradation-risk heads}. Its multi-task objective is
+\begin{equation}
+\begin{aligned}
+\mathcal{L}_{\mathrm{R2}}
+=&
+\lambda_s \operatorname{BCE}(y_i^{s}, p_i^{s})
++
+\lambda_r \operatorname{BCE}(y_i^{r}, p_i^{r})
++
+\lambda_d \operatorname{BCE}(y_i^{d}, p_i^{d}),\\
+y_i^{r}=1 &\iff \operatorname{RawFail}_i \land \operatorname{CandSuccess}_i,\\
+y_i^{d}=1 &\iff \operatorname{RawSuccess}_i \land \operatorname{CandFail}_i.
+\end{aligned}
+\label{eq:r2gate_loss}
+\end{equation}
+All selector and gate parameters are determined on validation or by a pre-frozen setting. The test split is evaluated once, without threshold sweeping or strategy retuning based on test results.
+
+At inference time, each sample produces one  {Raw Grasp anchor} and one same-object  {AnchorLift candidate}. The final output is selected between these two. We score a candidate by
+\begin{equation}
+S_i = p_i^{s} + \alpha p_i^{r} - \beta p_i^{d},
+\label{eq:replacement_score}
+\end{equation}
+and apply the capped  {risk-aware replacement} rule
+\begin{equation}
+\begin{aligned}
+C_i
+=&
+\mathbb{1}[
+\mathrm{same}(g_i^{0},g_i^{a})=1
+\land
+S_i \ge \tau
+\land
+p_i^{d} \le \delta \\
+&\land
+|R|/N \le \rho
+\land
+|R_{s_i}|/N_{s_i} \le \rho_s],\\
+\hat{g}_i
+=&
+\begin{cases}
+g_i^{a}, & C_i=1,\\
+g_i^{0}, & C_i=0.
+\end{cases}
+\end{aligned}
+\label{eq:final_decision}
+\end{equation}
+where the global replacement set $R$ and scene-level replacement set $R_{s_i}$ enforce the global and per-scene caps.
+\section{Experiments}
+
+\subsection{Experimental Setup}
+
+We evaluate SafeAnchor-Grasp on 90 test scenes from the large-scale cluttered multi-object dexterous grasping benchmark GraspNet-1Billion. The experiments address three questions. First, can SafeAnchor-Grasp outperform  {Raw Grasp} on the 90-scene GraspNet-1Billion test while replacing only a small number of samples? Second, does AnchorLift provide useful same-object  {AnchorLift candidates} rather than arbitrary re-selection? Third, can R\textsuperscript{2}-Gate convert candidate potential into stable performance improvement without damaging the  {Raw Grasp anchor}?
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure4}
+  \caption{Hard-scene  {Raw Grasp} failure versus SafeAnchor-Grasp success. Each row shows the target object, the failed  {Raw Grasp} and the final SafeAnchor-Grasp result. The red hand indicates failure of  {Raw Grasp}, while the green hand indicates the selected same-object  {AnchorLift candidate}.}
+  \label{fig:hard}
+\end{figure*}
+
+\subsection{Overall Benchmark and Hard-Scene Performance}
+
+\begin{table*}[t]
+\centering
+\caption{Overall and hard-scene performance. SafeAnchor-Grasp improves  {Raw Grasp} on the 90-scene GraspNet-1Billion test and obtains larger gains on hard scenes. It replaces only about 12\% of  {Raw Grasp} predictions and all replacements preserve the original target object. Hard scenes denote scenes where  {Raw Grasp} success is below 0.85.}
+\label{tab:overall}
+\begingroup
+\setlength{\tabcolsep}{2.6pt}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}c c c c c @{\hspace{6pt}\vrule width 0.7pt\hspace{6pt}} c c c c c@{}}
+\toprule
+\textbf{Set} & \textbf{Scenes} & \textbf{ {Raw Grasp}} & \textbf{ {SafeAnchor-Grasp}} & \textbf{$\Delta$} &
+\textbf{Scene} & \textbf{Target} & \textbf{ {Raw Grasp}} & \textbf{ {SafeAnchor-Grasp}} & \textbf{$\Delta$} \\
+\midrule
+ {GraspNet-1Billion} & 90 & 0.8871 & \textbf{0.9322} & \textbf{+0.0451} & 0117 & facewash & 0.4727 & \textbf{0.9570} & \textbf{+0.4844} \\
+Hard scenes & 26 & 0.7237 & \textbf{0.8274} & \textbf{+0.1037} & 0114 & facewash & 0.6328 & \textbf{0.9922} & \textbf{+0.3594} \\
+Best-10 hard & 10 & 0.6566 & \textbf{0.9008} & \textbf{+0.2441} & 0115 & shampoo & 0.6563 & \textbf{0.9766} & \textbf{+0.3203} \\
+Best hard cases & 6 & 0.6113 & \textbf{0.9277} & \textbf{+0.3164} & 0121 & shampoo & 0.5195 & \textbf{0.7734} & \textbf{+0.2539} \\
+\bottomrule
+\end{tabular*}
+\endgroup
+\end{table*}
+
+Table~\ref{tab:overall} summarizes the overall and hard-scene performance. SafeAnchor-Grasp outperforms  {Raw Grasp} on the 90-scene GraspNet-1Billion test and achieves larger improvements on more difficult subsets. The left block reports aggregate results. On the 90-scene GraspNet-1Billion test, SafeAnchor-Grasp improves the success rate from 0.8871 to 0.9322, yielding a gain of 4.51 percentage points. When the evaluation is restricted to the 26 hard scenes where  {Raw Grasp} success is below 0.85, the gain increases to 10.37 percentage points. On the best-10 hard scenes and best hard cases, the gains reach 24.41 and 31.64 percentage points, respectively.
+
+The right block of Table~\ref{tab:overall} further lists representative hard-scene rescues. Scene 0117 improves from 0.4727 to 0.9570, scene 0114 improves from 0.6328 to 0.9922 and scene 0115 improves from 0.6563 to 0.9766. These case-level improvements are consistent with the hard-scene statistics in the left block, indicating that same-object  {AnchorLift candidates} can compensate for weak-lift failures of  {Raw Grasp}, while R\textsuperscript{2}-Gate converts these candidates into stable final performance gains. Figure~\ref{fig:hard} provides qualitative evidence. The red hands indicate  {Raw Grasp} failure and the green hands indicate SafeAnchor-Grasp outputs. The improvement is not obtained by changing the target object; instead, AnchorLift provides same-object  {AnchorLift candidates} and R\textsuperscript{2}-Gate selects them only when replacement is more likely to be beneficial.
+
+\subsection{ {AnchorLift} Candidate Ability}
+
+ {AnchorLift} aims to raise the same-object candidate ceiling. It uses  {Raw Grasp} as an anchor seed, binds it to the original target object and constructs a target-local point-cloud representation. Figure~\ref{fig:anchorlift} visualizes this state. The selected object, local point cloud and proxy-based diagnostic fields show that  {AnchorLift} operates around the  {Raw Grasp}-bound target rather than searching for an unrelated object.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure5}
+  \caption{ {AnchorLift} intermediate states. The figure shows same-object binding ability and physics-aware diagnostic capability of  {AnchorLift} across different objects in the same scene.}
+  \label{fig:anchorlift}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Same-object candidate ceiling of  {AnchorLift}.  {AnchorLift} is complementary to  {Raw Grasp} and raises the same-object candidate ceiling to about 0.98. Nonzero rescue/ {degradation risk} counts show why R\textsuperscript{2}-Gate is necessary.}
+\label{tab:ceiling}
+\begingroup
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{@{}c c c c c c@{}}
+\toprule
+Split & \#Pairs &  {Raw Grasp} &  {AnchorLift} & Ceiling ($\Delta$) & R / D \\
+\midrule
+Train & 23028 & 0.8738 & 0.9361 & \textbf{0.9819 (+0.1080)} & 2488 / 1055 \\
+Val & 2552 & 0.8954 & 0.9259 & \textbf{0.9835 (+0.0882)} & 225 / 147 \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+Table~\ref{tab:ceiling} further explains where the gain comes from.  {AnchorLift} is not used as the direct final output; it provides same-object  {AnchorLift candidates} that are complementary to  {Raw Grasp}. The ceiling denotes the diagnostic average in which a pair is counted as successful if either  {Raw Grasp} or the same-object  {AnchorLift candidate} succeeds. This ceiling reaches approximately 0.98 on both train and validation splits, indicating strong candidate potential. However, nonzero  {degradation-risk} cases remain. Therefore, R\textsuperscript{2}-Gate is needed to determine which  {AnchorLift candidates} should actually replace  {Raw Grasp}.
+
+% \begin{table}[t]
+% \centering
+% \caption{Overall performance on GraspNet-1Billion. SafeAnchor-Grasp achieves the best performance under the 1/1000 ratio setting.}
+% \label{tab:graspnet_benchmark}
+% \begingroup
+% \setlength{\tabcolsep}{3.5pt}
+% \renewcommand{\arraystretch}{1.4}
+% \smallsize
+% \resizebox{\linewidth}{!}{%
+% \begin{tabular}{l c c c c}
+% \toprule
+% \multirow{2}{*}{Method} & \multirow{2}{*}{Ratio} & \multicolumn{3}{c}{GraspNet-1Billion} \\
+% \cmidrule(lr){3-5}
+% & & Dense & Random & Loose \\
+% \midrule
+% HGC-Net & 1 & 46.0 & 37.8 & 26.7 \\
+% GraspTTA & 1 & 62.5 & 54.1 & 42.8 \\
+% ISAGrasp & 1 & 63.4 & 60.7 & 51.4 \\
+% DexGraspNet2.0 / & 1/1000 & 83.3 & 79.5 & 73.9 \\
+% CADGrasp & 1/1000 & 89.5 & 87.2 & 81.6 \\
+% \textbf{ {SafeAnchor-Grasp}} & \textbf{1/1000} & \textbf{93.2} & \textbf{91.1} & \textbf{85.6} \\
+% \bottomrule
+% \end{tabular}}
+% \endgroup
+% \end{table}
+\begin{table}[t]
+\centering
+\caption{Overall performance on GraspNet-1Billion. SafeAnchor-Grasp achieves the best performance under the 1/1000 ratio setting.}
+\label{tab:graspnet_benchmark}
+\begingroup
+\setlength{\tabcolsep}{9pt}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{@{}c c c c c@{}}
+\toprule
+\multirow{2}{*}{Method} & \multirow{2}{*}{Ratio} & \multicolumn{3}{c}{GraspNet-1Billion} \\
+\cmidrule(lr){3-5}
+& & Dense & Random & Loose \\
+\midrule
+HGC-Net & 1 & 46.0 & 37.8 & 26.7 \\
+GraspTTA & 1 & 62.5 & 54.1 & 42.8 \\
+ISAGrasp & 1 & 63.4 & 60.7 & 51.4 \\
+DexGraspNet2.0 & 1/1000 & 83.3 & 79.5 & 73.9 \\
+CADGrasp & 1/1000 & 89.5 & 87.2 & 81.6 \\
+\textbf{SafeAnchor-Grasp} & \textbf{1/1000} & \textbf{93.2} & \textbf{91.1} & \textbf{85.6} \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+Table~\ref{tab:graspnet_benchmark} compares overall performance with different methods on GraspNet-1Billion. Under the same 1/1000 ratio setting, SafeAnchor-Grasp reaches 93.2, 91.1 and 85.6 on the Dense, Random and Loose settings, respectively, all higher than DexGraspNet2.0 at 83.3, 79.5 and 73.9. The corresponding improvements are 9.9, 11.6 and 11.7 percentage points. Compared with CADGrasp under the same 1/1000 ratio setting, SafeAnchor-Grasp still improves by 3.7, 3.9 and 4.0 percentage points. This shows that same-object safe enhancement not only improves the average performance of the  {Raw Grasp prior}, but also strengthens stability under more challenging evaluation settings.
+
+\subsection{R\textsuperscript{2}-Gate Selection Ability}
+
+R\textsuperscript{2}-Gate evaluates the replacement operation rather than scoring a candidate in isolation. It compares  {Raw Grasp} and the  {AnchorLift candidate} as a pair and estimates candidate success,  {rescue potential} and  {degradation risk}.
+
+\begin{table}[t]
+\centering
+\caption{R\textsuperscript{2}-Gate safe selection behavior. R\textsuperscript{2}-Gate converts the candidate potential of  {AnchorLift candidates} into final gains by enforcing same-object, low-risk and replacement-budget constraints.}
+\label{tab:gate}
+\begingroup
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{@{}c c >{\centering\arraybackslash}p{0.42\linewidth}@{}}
+\toprule
+Item & Value & Meaning \\
+\midrule
+Selected replacement rate & 0.119965 & fraction replaced by  {AnchorLift candidates} \\
+Same-object rate & 1.0000 & all replacements preserve target identity \\
+Global budget & 0.12 & prevents broad intervention \\
+Per-scene budget & 0.15 & prevents over-changing one scene \\
+Max scene replacement & 0.148438 & below scene-level cap \\
+Val rescue & 49 & high-precision selected replacements \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+Table~\ref{tab:gate} shows that the replacement budget is intentionally small: SafeAnchor-Grasp uses only a small subset of  {AnchorLift candidates}. This protects the strong  {Raw Grasp} baseline while allowing the system to perform high-confidence improvements on difficult samples. The results also show that R\textsuperscript{2}-Gate does not simply increase the usage ratio of  {AnchorLift candidates}. Instead, it filters low-risk candidates under a controlled replacement budget. SafeAnchor-Grasp uses a selected replacement rate of only 0.119965 while maintaining a same-object rate of 1.0000 and obtains 49 validation rescues. These results indicate that R\textsuperscript{2}-Gate prioritizes replacements with positive gain while preserving target identity, thereby converting the potential of  {AnchorLift candidates} into stable final performance improvement.
+
+\subsection{Lightweight Second-Stage Optimization and Robot-Arm Experiments}
+
+SafeAnchor-Grasp is designed as a lightweight second-stage optimization module. Its core advantage is that it reuses an existing  {Raw Grasp prior} and only adds same-object candidate enhancement and risk selection components after  {Raw Grasp} prediction. Table~\ref{tab:lightweight} shows that the  {Raw Grasp prior} remains frozen,  {AnchorLift} performs local same-object candidate enhancement, the R\textsuperscript{2}-Gate checkpoint is about 374K and the  {capped replacement rule} introduces no additional trainable parameters. In the final export, only 2764 of 23040 outputs are replaced. Therefore, SafeAnchor-Grasp does not require training a large grasp generator from scratch and has a small model increment, low selection overhead and a flexible interface for integration into existing visual grasping pipelines.
+
+\begin{table}[t]
+\centering
+\caption{Lightweight implementation and simulated deployment evidence. SafeAnchor-Grasp reuses a frozen  {Raw Grasp prior} and trains only  {AnchorLift} and a lightweight R\textsuperscript{2}-Gate. UR evidence is simulation-only and is not reported as real-hardware validation.}
+\label{tab:lightweight}
+\begingroup
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{@{}c c >{\centering\arraybackslash}p{0.29\linewidth} >{\centering\arraybackslash}p{0.27\linewidth}@{}}
+\toprule
+Component & Trainable & Input & Size  \\
+\midrule
+ {Raw Grasp} & No & scene observation & -\\
+ {AnchorLift} & Yes & local points +  Raw & 107M \\
+R\textsuperscript{2}-Gate & Yes & pairwise metadata & 374K \\\\
+UR simulation & No & selected outputs & - \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+Figure~\ref{fig:ur} shows UR arm plus dexterous-hand simulated execution. It shows that SafeAnchor-Grasp outputs can serve as target hand configurations in a robot-arm pipeline.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure6}
+  \caption{UR arm and dexterous-hand simulated execution. The left column shows target objects and the right columns show simulated approach, closure and lifting states using SafeAnchor-Grasp outputs.}
+  \label{fig:ur}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure8.png}
+  \caption{Real robotic arm-dexterous hand grasping experimental platform}
+  \label{fig:scene}
+\end{figure}
+Figure~\ref{fig:scene} shows the real robotic arm-dexterous hand grasping experimental platform. 
+The RealSense D455 is used to acquire scene point clouds and scene images. Candidate objects are segmented using SAM\cite{need to get a preference} to obtain visible point clouds of the objects and local point clouds around them. The Allegro hand serves as the end effector of the UR robotic arm. When the SafeAnchor-Grasp outputs the grasping posture, the UR calculates the TCP position during grasping using inverse kinematics and then moves the Allegro hand to the grasping position.
+
+Figure~\ref{fig:real_robot} shows preliminary real-robot execution results of SafeAnchor-Grasp on a UR arm and dexterous-hand platform. The figure contains two parts. The first part shows a single-target-object setting, including the RGB observation, object feature,  {Raw Grasp}, SafeAnchor-Grasp optimized grasp and physical arm execution. The second part shows the same workflow in a cluttered multi-object setting. This layout directly corresponds to the core setting of this paper: SafeAnchor-Grasp does not change the original target object, but generates a more stable  {AnchorLift candidate} on the same target object and passes the final candidate to the arm-hand execution system.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figure7}
+  \caption{Real-robot execution demonstration of SafeAnchor-Grasp. The upper block shows observation, object feature,  {Raw Grasp}, SafeAnchor-Grasp output and UR arm plus dexterous-hand physical execution for a single target object. The lower block shows the same workflow in a cluttered multi-object scene.}
+  \label{fig:real_robot}
+\end{figure*}
+\section{Conclusion}
+
+This paper presented SafeAnchor-Grasp, which formulates dexterous grasp optimization in cluttered multi-object scenes as a lightweight safe enhancement process under same-object constraints. Unlike direct grasp generation or unconditional replacement of  {Raw Grasp}, the method treats  {Raw Grasp} as a stable anchor, generates  {AnchorLift candidates} only on the same target object through AnchorLift and further applies R\textsuperscript{2}-Gate to perform pairwise risk evaluation between  {Raw Grasp} and the  {AnchorLift candidate}. This design enables controlled selective replacement.
+
+On the 90-scene GraspNet-1Billion test, SafeAnchor-Grasp improves the mean success rate from 0.8871 to 0.9322 with an actual replacement rate of only about 12\%, yielding a gain of 4.51 percentage points. On 26 hard scenes, the mean success rate improves by 10.37 percentage points; on the best-10 failure cases, the average improvement reaches 24.41 percentage points. These results show that the advantage of SafeAnchor-Grasp does not come from enlarging the candidate pool or increasing the replacement ratio, but from risk-aware filtering of same-object  {AnchorLift candidates}. The system replaces  {Raw Grasp} only when the  {AnchorLift candidate} has clear expected gain and low  {degradation risk}, thereby improving overall performance while preserving the stability of the  {Raw Grasp prior}.
+
+Overall, the proposed method reuses existing visual grasping priors with a small model increment and low replacement overhead. It improves dexterous grasping performance in cluttered multi-object scenes without object switching or unconditional overwriting of  {Raw Grasp}. The real-robot experiments further show that SafeAnchor-Grasp outputs can be integrated into a UR arm plus dexterous-hand execution pipeline and qualitatively validated in both single-object and cluttered multi-object settings.
+{\small
+\begin{thebibliography}{29}
+
+\bibitem{r1} A. ten Pas, M. Gualtieri, K. Saenko and R. Platt, ``Grasp Pose Detection in Point Clouds,'' \emph{International Journal of Robotics Research}, 2017.
+\bibitem{r2} J. Mahler \emph{et al.}, ``Dex-Net 2.0: Deep Learning to Plan Robust Grasps with Synthetic Point Clouds and Analytic Grasp Metrics,'' \emph{Robotics: Science and Systems}, 2017.
+\bibitem{r3} D. Morrison, P. Corke and J. Leitner, ``Closing the Loop for Robotic Grasping: A Real-time, Generative Grasp Synthesis Approach,'' \emph{Robotics: Science and Systems}, 2018.
+\bibitem{r4} A. Mousavian, C. Eppner and D. Fox, ``6-DOF GraspNet: Variational Grasp Generation for Object Manipulation,'' \emph{International Conference on Computer Vision}, 2019.
+\bibitem{r5} H. Liang \emph{et al.}, ``PointNetGPD: Detecting Grasp Configurations from Point Sets,'' \emph{International Conference on Robotics and Automation}, 2019.
+\bibitem{r6} J. Mahler \emph{et al.}, ``Learning Ambidextrous Robot Grasping Policies,'' \emph{Science Robotics}, 2019.
+\bibitem{r7} H.-S. Fang, C. Wang, M. Gou and C. Lu, ``GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping,'' \emph{Computer Vision and Pattern Recognition}, 2020.
+\bibitem{r8} M. Breyer, J. J. Chung, L. Ott, R. Siegwart and J. Nieto, ``Volumetric Grasping Network: Real-time 6 DOF Grasp Detection in Clutter,'' \emph{Conference on Robot Learning}, 2020.
+\bibitem{r9} M. Sundermeyer, A. Mousavian, R. Triebel and D. Fox, ``Contact-GraspNet: Efficient 6-DoF Grasp Generation in Cluttered Scenes,'' \emph{International Conference on Robotics and Automation}, 2021.
+\bibitem{r10} C. Eppner, A. Mousavian and D. Fox, ``ACRONYM: A Large-Scale Grasp Dataset Based on Simulation,'' \emph{International Conference on Robotics and Automation}, 2021.
+\bibitem{r11} H.-S. Fang \emph{et al.}, ``AnyGrasp: Robust and Efficient Grasp Perception in Spatial and Temporal Domains,'' \emph{IEEE Transactions on Robotics}, 2023.
+\bibitem{r12} Y. Wang \emph{et al.}, ``DexGraspNet: A Large-Scale Robotic Dexterous Grasp Dataset for General Objects Based on Simulation,'' \emph{International Conference on Robotics and Automation}, 2023.
+\bibitem{r13} P. Li \emph{et al.}, ``GenDexGrasp: Generalizable Dexterous Grasping,'' \emph{International Conference on Robotics and Automation}, 2023.
+\bibitem{r14} Y. Xu \emph{et al.}, ``UniDexGrasp: Universal Robotic Dexterous Grasping via Learning Diverse Proposal Generation and Goal-Conditioned Policy,'' \emph{Computer Vision and Pattern Recognition}, 2023.
+\bibitem{r15} S. Huang \emph{et al.}, ``Diffusion-based Generation, Optimization and Planning in 3D Scenes,'' \emph{Computer Vision and Pattern Recognition}, 2023.
+\bibitem{r16} P. Grady, C. Tang, C. D. Twigg, M. Vo, S. Brahmbhatt and C. Kemp, ``ContactOpt: Optimizing Contact to Improve Grasps,'' \emph{Computer Vision and Pattern Recognition}, 2021.
+\bibitem{r17} H. Jiang \emph{et al.}, ``Hand-Object Contact Consistency Reasoning for Human Grasps Generation,'' \emph{International Conference on Computer Vision}, 2021.
+\bibitem{r18} S. Liu \emph{et al.}, ``ContactGen: Generative Contact Modeling for Grasp Generation,'' \emph{International Conference on Computer Vision}, 2023.
+\bibitem{r19} Z. Weng, H. Lu, D. Kragic and J. Lundell, ``DexDiffuser: Generating Dexterous Grasps with Diffusion Models,'' \emph{IEEE Robotics and Automation Letters}, 2024.
+\bibitem{r20} Y. Xu \emph{et al.}, ``Dexterous Grasp Transformer,'' \emph{Computer Vision and Pattern Recognition}, 2024.
+\bibitem{r21} W. Wei \emph{et al.}, ``Language-guided Dexterous Grasp Generation,'' \emph{Neural Information Processing Systems}, 2024.
+\bibitem{r22} H. Zhang \emph{et al.}, ``DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes,'' \emph{Conference on Robot Learning}, 2024.
+\bibitem{r23} Y. Zhang \emph{et al.}, ``CADGrasp: Learning Contact and Collision Aware General Dexterous Grasping in Cluttered Scenes,'' \emph{arXiv preprint}, 2026.
+\bibitem{r24} X. Zhong \emph{et al.}, ``DexGrasp Anything: Towards Universal Robotic Dexterous Grasping with Physics Awareness,'' \emph{Computer Vision and Pattern Recognition}, 2025.
+\bibitem{r25} J. Jian \emph{et al.}, ``G-DexGrasp: Generalizable Dexterous Grasping Synthesis via Part-Aware Prior Retrieval and Adaptation,'' \emph{International Conference on Computer Vision}, 2025.
+\bibitem{r26} X. Chen \emph{et al.}, ``ClutterDexGrasp: A Sim-to-Real System for General Dexterous Grasping in Cluttered Scenes,'' \emph{arXiv preprint}, 2025.
+\bibitem{r27} S. Shin \emph{et al.}, ``SECOND-Grasp: Semantic Contact-guided Dexterous Grasping,'' \emph{arXiv preprint}, 2026.
+\bibitem{r28} Y. Chao \emph{et al.}, ``DexYCB: A Benchmark for Capturing Hand Grasping of Objects,'' \emph{Computer Vision and Pattern Recognition}, 2021.
+\bibitem{r29} V. Makoviychuk \emph{et al.}, ``Isaac Gym: High Performance GPU-Based Physics Simulation for Robot Learning,'' \emph{Neural Information Processing Systems Datasets and Benchmarks}, 2021.
+
+\end{thebibliography}
+}
+
+\end{document}
