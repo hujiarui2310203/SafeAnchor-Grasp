@@ -364,23 +364,15 @@
             <p class="body-copy">Hardware videos demonstrate SafeAnchor-Grasp outputs being executed by the UR arm and Allegro dexterous hand.</p>
           </div>
 
-          <div class="video-grid" aria-label="Real grasp execution videos">
+          <div class="single-video" aria-label="Additional real grasp execution videos">
             <figure>
-              <video controls muted preload="metadata" src="assets/videos/demo1.mp4"></video>
-              <figcaption>Real grasp demo 1</figcaption>
+              <video id="demoVideo" controls muted playsinline preload="metadata" src="assets/videos/demo1.mp4"></video>
+              <figcaption>Real grasp execution</figcaption>
             </figure>
-            <figure>
-              <video controls muted preload="metadata" src="assets/videos/demo2.mp4"></video>
-              <figcaption>Real grasp demo 2</figcaption>
-            </figure>
-            <figure>
-              <video controls muted preload="metadata" src="assets/videos/demo3.mp4"></video>
-              <figcaption>Real grasp demo 3</figcaption>
-            </figure>
-            <figure>
-              <video controls muted preload="metadata" src="assets/videos/demo4.mp4"></video>
-              <figcaption>Real grasp demo 4</figcaption>
-            </figure>
+            <div class="single-video__controls" aria-label="Additional video navigation">
+              <button type="button" id="prevDemo" aria-label="Previous additional video">Previous</button>
+              <button type="button" id="nextDemo" aria-label="Next additional video">Next</button>
+            </div>
           </div>
         </div>
       </section>
@@ -435,6 +427,28 @@
 
       prevPair.addEventListener("click", () => showVideoPair(activePair - 1));
       nextPair.addEventListener("click", () => showVideoPair(activePair + 1));
+
+      const demoVideos = [
+        "assets/videos/demo1.mp4",
+        "assets/videos/demo2.mp4",
+        "assets/videos/demo3.mp4",
+        "assets/videos/demo4.mp4"
+      ];
+
+      const demoVideo = document.getElementById("demoVideo");
+      const prevDemo = document.getElementById("prevDemo");
+      const nextDemo = document.getElementById("nextDemo");
+      let activeDemo = 0;
+
+      function showDemoVideo(nextIndex) {
+        activeDemo = (nextIndex + demoVideos.length) % demoVideos.length;
+        demoVideo.pause();
+        demoVideo.src = demoVideos[activeDemo];
+        demoVideo.load();
+      }
+
+      prevDemo.addEventListener("click", () => showDemoVideo(activeDemo - 1));
+      nextDemo.addEventListener("click", () => showDemoVideo(activeDemo + 1));
     </script>
   </body>
 </html>
