@@ -1,0 +1,142 @@
+[
+  {
+    "number": 1,
+    "source_sha256": "90e86b24af31721b422486469c6436b0668fcecee8b6e8512d6dc905ae87af55",
+    "web_sha256": "3d8c939c5bbb0fb7f1ca30f5e1a3d0a61e52ab406ad8ad39f7a2a96b8b54eab4",
+    "web_bytes": 8286885,
+    "original": {
+      "frames": 1343,
+      "seconds": 44.8,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1343,
+      "seconds": 44.8,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 2,
+    "source_sha256": "e8e5da54e39215982c0fd015a7dc67238b402ee0c3904c8a9a96e32420845929",
+    "web_sha256": "7c902ba53773060b036572fce6bfd30306f45b0e816d763f7e2f68fcbcb925e4",
+    "web_bytes": 7303656,
+    "original": {
+      "frames": 1149,
+      "seconds": 38.33333333333333,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1149,
+      "seconds": 38.33333333333333,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 3,
+    "source_sha256": "6fe9ade96d94b694a115d85b0a98b7add231274830103560ab49318339deb28d",
+    "web_sha256": "98b813550ea52f7dd91cca618263afbc460da1d74cbf70d71944a29efd001922",
+    "web_bytes": 8103046,
+    "original": {
+      "frames": 1289,
+      "seconds": 43.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1289,
+      "seconds": 43.0,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 4,
+    "source_sha256": "f87d0748f7618a6e47906d3e1e834def818e045aa087eb5ea09b2a04f789556a",
+    "web_sha256": "6e84e8a32c037afb04bc041617dfe86dccc0d24a21deaf30473da6bfaee1bd8d",
+    "web_bytes": 6346072,
+    "original": {
+      "frames": 1061,
+      "seconds": 35.4,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1061,
+      "seconds": 35.4,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 5,
+    "source_sha256": "fc6da160e480b407daf3274283d8a9a20c7856ebc10ce25caaff6ad4d53ff613",
+    "web_sha256": "4d0c752d3582b35183b7cedbf5f46a49088c5df0d9cebb4c9abda2ca31429800",
+    "web_bytes": 7074049,
+    "original": {
+      "frames": 1084,
+      "seconds": 36.166666666666664,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1084,
+      "seconds": 36.166666666666664,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 6,
+    "source_sha256": "f3ed7242214b6b9684de1418405fe16374f77079fcd43255c7bc8e9469490a62",
+    "web_sha256": "1c2de93774bcc6fcd5946a350875d69ef9d5b860059873476cd51ae3dbc26482",
+    "web_bytes": 6379197,
+    "original": {
+      "frames": 1055,
+      "seconds": 35.199999999999996,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 1055,
+      "seconds": 35.199999999999996,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  },
+  {
+    "number": 7,
+    "source_sha256": "475b23aeb472ec3f7d6b82650841bc5b4a9e6c81542d188f4602ec082cfb444a",
+    "web_sha256": "b447ce87624d7912d4e0193e7a208219e103afe558f42c2704460e5627e105ba",
+    "web_bytes": 5469995,
+    "original": {
+      "frames": 917,
+      "seconds": 30.6,
+      "width": 1280,
+      "height": 720,
+      "codec": "hevc"
+    },
+    "web": {
+      "frames": 917,
+      "seconds": 30.6,
+      "width": 1280,
+      "height": 720,
+      "codec": "h264"
+    }
+  }
+]

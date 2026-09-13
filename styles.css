@@ -334,7 +334,7 @@ figcaption {
 
 .single-video video {
   aspect-ratio: 16 / 10;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .single-video__controls {

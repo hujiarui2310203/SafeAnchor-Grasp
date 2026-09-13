@@ -29,8 +29,9 @@
         </p>
         <div class="actions" aria-label="Project links">
           <a class="button button--primary" href="assets/manuscript.tex">Manuscript Source</a>
+          <a class="button" href="assets/data/results.json" download>Results Data</a>
           <a class="button" href="#videos">Watch Videos</a>
-          <a class="button" href="https://github.com/hujiarui2310203">GitHub</a>
+          <a class="button" href="https://github.com/hujiarui2310203/SafeAnchor-Grasp">GitHub</a>
         </div>
       </div>
     </header>
@@ -43,7 +44,7 @@
             <h2>Risk-controlled same-object enhancement</h2>
           </div>
           <p class="lead">
-            Dexterous grasping in cluttered multi-object scenes requires more than a geometrically plausible hand pose. The grasp must remain stable during lifting and holding. SafeAnchor-Grasp reuses existing visual grasping priors and performs low-cost same-object second-stage enhancement. AnchorLift binds Raw Grasp to the target object as an anchor seed and generates an AnchorLift candidate from target-local geometry. Rescue-Risk Gate then models Raw Grasp and the AnchorLift candidate as a pair and estimates candidate success, rescue potential, and degradation risk. On GraspNet-1Billion, SafeAnchor-Grasp reaches a final mean success of 0.9322, improving over Raw Grasp by 0.0451 while replacing only about 12 percent of original predictions.
+            Dexterous grasping in cluttered multi-object scenes requires more than a geometrically plausible hand pose. The grasp must remain stable during lifting and holding. SafeAnchor-Grasp reuses existing visual grasping priors and performs low-cost same-object second-stage enhancement. AnchorLift binds Raw Grasp to the target object as an anchor seed and generates an AnchorLift candidate from target-local geometry. Rescue-Risk Gate then models Raw Grasp and the AnchorLift candidate as a pair and estimates candidate success, rescue potential, and degradation risk. Across 90 test scenes, integration improves DexDiffuser, GenDexGrasp, and DexGraspNet 2.0 success by approximately 15, 10, and 3 percentage points, respectively. In the DexGraspNet 2.0 analysis, mean success reaches 0.9221, and the observed replacement rate is approximately 12 percent. This rate is not a universal budget for other generators.
           </p>
         </div>
       </section>
@@ -52,7 +53,7 @@
         <div class="section__inner">
           <p class="eyebrow">Core Message</p>
           <div class="claim">
-            The method improves difficult grasps by replacing only a small, same-object, low-risk subset instead of overwriting every Raw Grasp prediction.
+            SafeAnchor-Grasp enhances grasps from different generators while preserving the target object, and jointly evaluates rescue benefit and degradation risk before adopting an optimized candidate.
           </div>
           <div class="highlight-grid" aria-label="Project highlights">
             <article class="highlight-item">
@@ -67,13 +68,13 @@
             </article>
             <article class="highlight-item">
               <span class="index">03</span>
-              <h3>HSF, SSF, RPF</h3>
-              <p>Provides proxy diagnostic fields for hand structure, surface support, and execution-risk analysis.</p>
+              <h3>Structured Physical Supervision</h3>
+              <p>Combines HSF, SSF, and PF to guide same-target contact, hand-structure, and penetration-aware optimization.</p>
             </article>
             <article class="highlight-item">
               <span class="index">04</span>
               <h3>R<sup>2</sup>-Gate</h3>
-              <p>Uses a learned intervention policy to select replacements under same-object, low-risk, and budget constraints.</p>
+              <p>Uses a learned intervention policy to compare rescue benefit and degradation risk under the same-target constraint.</p>
             </article>
           </div>
         </div>
@@ -100,7 +101,7 @@
             </div>
             <figure>
               <img src="assets/images/figure2.png" alt="AnchorLift and R2-Gate diagnostic fields">
-              <figcaption>Core intermediate states. HSF, SSF, and RPF visualize hand-structure response, target-surface support, and execution-risk proxy signals.</figcaption>
+              <figcaption>Core intermediate states. HSF, SSF, and PF provide hand-structure, target-surface proximity, and penetration diagnostics.</figcaption>
             </figure>
           </div>
 
@@ -112,7 +113,7 @@
             <div class="method-copy">
               <h3>Learned intervention policy</h3>
               <p>
-                R<sup>2</sup>-Gate evaluates replacement rather than candidate quality in isolation. It predicts candidate success, rescue potential, and degradation risk from Raw Grasp, AnchorLift candidate, delta features, and object-local cues. The capped rule keeps Raw Grasp by default and allows replacement only for same-object, low-risk, in-budget candidates.
+                R<sup>2</sup>-Gate evaluates replacement rather than candidate quality in isolation. It predicts candidate success, rescue potential, and degradation risk from Raw Grasp, AnchorLift candidate, delta features, and object-local cues. The selection rule retains Raw Grasp unless an eligible same-target candidate has sufficient intervention value and meets the degradation-risk constraint. Replacement rates are specific to the generator and evaluation setting.
               </p>
             </div>
           </div>
@@ -123,187 +124,158 @@
         <div class="section__inner">
           <div class="section-heading">
             <p class="eyebrow">Results</p>
-            <h2>Small replacement rate, clear gains on hard scenes</h2>
+            <h2>Cross-generator enhancement and same-target analysis</h2>
+            <p class="body-copy">Results from the current manuscript, updated September 13, 2026.
+              <a href="assets/data/results.json" download>Download all reported results (JSON)</a>.
+              <a href="assets/data/README.md">Data definitions and provenance</a>.
+            </p>
           </div>
-
           <div class="metric-row">
-            <div>
-              <span class="metric">0.9322</span>
-              <p>Final mean success on the 90-scene GraspNet-1Billion test.</p>
-            </div>
-            <div>
-              <span class="metric">+0.1037</span>
-              <p>Mean improvement on 26 hard scenes where Raw Grasp is below 0.85.</p>
-            </div>
-            <div>
-              <span class="metric">11.9965%</span>
-              <p>Selected replacement rate while preserving the same target object.</p>
-            </div>
+            <div><span class="metric">0.9221</span><p>Final mean success with DexGraspNet 2.0 on the 90-scene test.</p></div>
+            <div><span class="metric">+10.37 pp</span><p>Mean gain on its 26 low-success scenes.</p></div>
+            <div><span class="metric">~12%</span><p>Observed replacement rate for DexGraspNet 2.0 only.</p></div>
           </div>
-
+          <p class="body-copy">The GraspNet-1Billion test covers scenes 0100-0189, with 256 views per scene and 23,040 scene-view samples. A successful simulated grasp passes the pre-grasp collision check and lifts the bound target object by more than 0.10 m.</p>
+          <div class="table-block" id="table-i">
+            <h3>Table I. Cross-generator integration</h3>
+            <div class="table-scroll">
+              <table aria-label="Table I. Cross-generator integration">
+                <thead><tr><th scope="col">Generator</th><th scope="col">Raw success</th><th scope="col">Integrated success</th><th scope="col">Absolute gain</th><th scope="col">Replacement rate</th><th scope="col">Joint ceiling</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">DexDiffuser [24]</th><td>0.73</td><td>0.88</td><td>+0.15</td><td>98%</td><td>N/A</td></tr>
+                  <tr><th scope="row">GenDexGrasp [21]</th><td>0.79</td><td>0.89</td><td>+0.10</td><td>93%</td><td>N/A</td></tr>
+                  <tr><th scope="row">DexGraspNet 2.0 [23]</th><td>0.89</td><td>0.92</td><td>+0.03</td><td>12%</td><td>0.95</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">Success and ceiling are proportions. Gains are approximately 15, 10, and 3 percentage points, respectively. Replacement rates are generator-specific, not a shared budget. N/A denotes joint ceilings not yet available in the current manuscript; replacement rates follow the reported results.</p>
+          </div>
+          <div class="table-grid">
+          <div class="table-block" id="table-ii">
+            <h3>Table II. Overall and low-success scene performance</h3>
+            <div class="table-scroll">
+              <table aria-label="Table II. Overall and low-success scene performance">
+                <thead><tr><th scope="col">Set</th><th scope="col">Scenes</th><th scope="col">Raw</th><th scope="col">SafeAnchor</th><th scope="col">Reported gain</th></tr></thead>
+                <tbody>
+                  <tr class="highlight"><th scope="row">GraspNet-1Billion</th><td>90</td><td>0.8921</td><td>0.9221</td><td>+0.0301</td></tr>
+                  <tr><th scope="row">Low-success scenes</th><td>26</td><td>0.7237</td><td>0.8274</td><td>+0.1037</td></tr>
+                  <tr><th scope="row">Best-10 low-success</th><td>10</td><td>0.6566</td><td>0.9008</td><td>+0.2441</td></tr>
+                  <tr><th scope="row">Best low-success cases</th><td>6</td><td>0.6113</td><td>0.9277</td><td>+0.3164</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">DexGraspNet 2.0 is the baseline. Low-success scenes have Raw Grasp success below 0.85. Best-10 and best-6 are gain-ranked subsets of the same 26 scenes. Reported gains retain the manuscript's precision and may differ slightly from subtracting rounded displayed means.</p>
+          </div>
+          <div class="table-block" id="confidence-intervals">
+            <h3>Scene-level bootstrap intervals</h3>
+            <div class="table-scroll">
+              <table aria-label="Scene-level bootstrap intervals">
+                <thead><tr><th scope="col">Set</th><th scope="col">Reported gain</th><th scope="col">95% confidence interval</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">All 90 scenes</th><td>+0.0301</td><td>[0.0138, 0.0492]</td></tr>
+                  <tr><th scope="row">26 low-success scenes</th><td>+0.1037</td><td>[0.0550, 0.1587]</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">Paired, scene-level bootstrap intervals for the DexGraspNet 2.0 analysis; values are success-proportion differences.</p>
+          </div>
+          </div>
           <figure class="wide-figure">
             <img src="assets/images/figure4.png" alt="Hard-scene Raw Grasp failure and SafeAnchor-Grasp success">
-            <figcaption>Hard-scene Raw Grasp failure versus SafeAnchor-Grasp success. Red hands indicate Raw Grasp failure, while green hands indicate the selected same-object AnchorLift candidate.</figcaption>
+            <figcaption>Same-target failure rescue in low-success scenes. Red hands indicate Raw Grasp failure; green hands indicate the selected AnchorLift candidate.</figcaption>
           </figure>
-
-          <div class="table-grid">
-            <div class="table-block">
-              <h3>Overall and hard-scene performance</h3>
-              <div class="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Set</th>
-                      <th>Scenes</th>
-                      <th>Raw</th>
-                      <th>Ours</th>
-                      <th>Gain</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr class="highlight">
-                      <td>Full benchmark</td>
-                      <td>90</td>
-                      <td>0.8871</td>
-                      <td>0.9322</td>
-                      <td>+0.0451</td>
-                    </tr>
-                    <tr>
-                      <td>Hard scenes</td>
-                      <td>26</td>
-                      <td>0.7237</td>
-                      <td>0.8274</td>
-                      <td>+0.1037</td>
-                    </tr>
-                    <tr>
-                      <td>Best-10 hard</td>
-                      <td>10</td>
-                      <td>0.6566</td>
-                      <td>0.9008</td>
-                      <td>+0.2441</td>
-                    </tr>
-                    <tr>
-                      <td>Best hard cases</td>
-                      <td>6</td>
-                      <td>0.6113</td>
-                      <td>0.9277</td>
-                      <td>+0.3164</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="table-block" id="scene-examples">
+            <h3>Representative low-success scenes</h3>
+            <div class="table-scroll">
+              <table aria-label="Representative low-success scenes">
+                <thead><tr><th scope="col">Scene</th><th scope="col">Raw</th><th scope="col">SafeAnchor</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">0117</th><td>0.4727</td><td>0.9570</td></tr>
+                  <tr><th scope="row">0114</th><td>0.6328</td><td>0.9922</td></tr>
+                  <tr><th scope="row">0115</th><td>0.6563</td><td>0.9766</td></tr>
+                  <tr><th scope="row">0121</th><td>0.5195</td><td>0.7734</td></tr>
+                </tbody>
+              </table>
             </div>
-
-            <div class="table-block">
-              <h3>R<sup>2</sup>-Gate selection behavior</h3>
-              <div class="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr class="highlight">
-                      <td>Selected replacement rate</td>
-                      <td>0.119965</td>
-                    </tr>
-                    <tr>
-                      <td>Same-object rate</td>
-                      <td>1.0000</td>
-                    </tr>
-                    <tr>
-                      <td>Global budget</td>
-                      <td>0.12</td>
-                    </tr>
-                    <tr>
-                      <td>Per-scene budget</td>
-                      <td>0.15</td>
-                    </tr>
-                    <tr>
-                      <td>Validation rescue</td>
-                      <td>49</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <p class="body-copy">These examples belong to the low-success subset, not an additional benchmark.</p>
           </div>
-
           <div class="table-grid table-grid--wide">
-            <div class="table-block">
-              <h3>GraspNet-1Billion comparison</h3>
-              <div class="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Method</th>
-                      <th>Ratio</th>
-                      <th>Dense</th>
-                      <th>Random</th>
-                      <th>Loose</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>DexGraspNet2.0 / Raw Grasp</td>
-                      <td>1/1000</td>
-                      <td>83.3</td>
-                      <td>79.5</td>
-                      <td>73.9</td>
-                    </tr>
-                    <tr>
-                      <td>CADGrasp</td>
-                      <td>1/1000</td>
-                      <td>89.5</td>
-                      <td>87.2</td>
-                      <td>81.6</td>
-                    </tr>
-                    <tr class="highlight">
-                      <td>SafeAnchor-Grasp</td>
-                      <td>1/1000</td>
-                      <td>93.2</td>
-                      <td>91.1</td>
-                      <td>85.6</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="table-block" id="table-iii">
+            <h3>Table III. GraspNet-1Billion comparison</h3>
+            <div class="table-scroll">
+              <table aria-label="Table III. GraspNet-1Billion comparison">
+                <thead><tr><th scope="col">Method</th><th scope="col">Ratio</th><th scope="col">Dense (%)</th><th scope="col">Random (%)</th><th scope="col">Loose (%)</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">HGC-Net [33]</th><td>1</td><td>46.0</td><td>37.8</td><td>26.7</td></tr>
+                  <tr><th scope="row">GraspTTA [29]</th><td>1</td><td>62.5</td><td>54.1</td><td>42.8</td></tr>
+                  <tr><th scope="row">ISAGrasp [34]</th><td>1</td><td>63.4</td><td>60.7</td><td>51.4</td></tr>
+                  <tr><th scope="row">DexGraspNet 2.0 [23]</th><td>1/1000</td><td>89.2</td><td>84.5</td><td>81.9</td></tr>
+                  <tr><th scope="row">CADGrasp [31]</th><td>1/1000</td><td>89.5</td><td>87.2</td><td>81.6</td></tr>
+                  <tr class="highlight"><th scope="row">SafeAnchor-Grasp</th><td>1/1000</td><td>92.2</td><td>90.1</td><td>85.6</td></tr>
+                </tbody>
+              </table>
             </div>
-
-            <div class="table-block">
-              <h3>Same-object candidate ceiling</h3>
-              <div class="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Split</th>
-                      <th>Pairs</th>
-                      <th>Raw</th>
-                      <th>AnchorLift</th>
-                      <th>Ceiling</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Train</td>
-                      <td>23028</td>
-                      <td>0.8738</td>
-                      <td>0.9361</td>
-                      <td><strong>0.9819</strong></td>
-                    </tr>
-                    <tr class="highlight">
-                      <td>Val</td>
-                      <td>2552</td>
-                      <td>0.8954</td>
-                      <td>0.9259</td>
-                      <td><strong>0.9835</strong></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <p class="body-copy">All six methods reported in the manuscript are included. Success rates in this table are percentages, not proportions.</p>
+          </div>
+          <div class="table-block" id="candidate-ceilings">
+            <h3>Same-target candidate ceilings</h3>
+            <div class="table-scroll">
+              <table aria-label="Same-target candidate ceilings">
+                <thead><tr><th scope="col">Split</th><th scope="col">Pairs</th><th scope="col">Joint ceiling</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Training</th><td>23,028</td><td>0.9819</td></tr>
+                  <tr><th scope="row">Validation</th><td>2,552</td><td>0.9835</td></tr>
+                  <tr><th scope="row">Test</th><td>23,040</td><td>0.9481</td></tr>
+                </tbody>
+              </table>
             </div>
+            <p class="body-copy">Training, validation, and test results are separate. On the DexGraspNet 2.0 test set, R<sup>2</sup>-Gate replaces 2,764 of 23,040 outputs (approximately 12%) while preserving the target object.</p>
+          </div>
+          </div>
+          <div class="table-block" id="table-iv-a">
+            <h3>Table IV-A. AnchorLift component ablation</h3>
+            <div class="table-scroll">
+              <table aria-label="Table IV-A. AnchorLift component ablation">
+                <thead><tr><th scope="col">Variant</th><th scope="col">Diagnostic success (%)</th><th scope="col">Change vs. full (pp)</th></tr></thead>
+                <tbody>
+                  <tr class="highlight"><th scope="row">Full AnchorLift</th><td>57.00</td><td>Reference</td></tr>
+                  <tr><th scope="row">w/o SPS</th><td>46.10</td><td>-10.90</td></tr>
+                  <tr><th scope="row">w/o target-local point cloud</th><td>42.70</td><td>-14.30</td></tr>
+                  <tr><th scope="row">w/o raw-grasp condition</th><td>39.40</td><td>-17.60</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">This experiment uses diagnostic scenes. Its success rates must not be compared directly with the full 90-scene test results.</p>
+          </div>
+          <div class="table-block" id="table-iv-b">
+            <h3>Table IV-B. R<sup>2</sup>-Gate policy ablation</h3>
+            <div class="table-scroll">
+              <table aria-label="Table IV-B. R2-Gate policy ablation">
+                <thead><tr><th scope="col">Policy</th><th scope="col">Test success (%)</th><th scope="col">Hard-scene success (%)</th><th scope="col">Replacement (%)</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Raw Grasp (never intervene)</th><td>89.21</td><td>72.37</td><td>0.00</td></tr>
+                  <tr><th scope="row">AnchorLift direct replacement (always intervene)</th><td>84.31</td><td>64.02</td><td>100.00</td></tr>
+                  <tr><th scope="row">Same-target Raw-or-AnchorLift ceiling</th><td>94.81</td><td>N/A</td><td>Oracle</td></tr>
+                  <tr class="highlight"><th scope="row">SafeAnchor-Grasp (learned limited intervention)</th><td>92.21</td><td>82.74</td><td>12.00</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">DexGraspNet 2.0 evaluation. The oracle ceiling uses outcome information and is not a deployable selection policy. N/A is an unreported result, not a zero.</p>
+          </div>
+          <div class="table-block" id="validation-ablations">
+            <h3>Three-seed validation ablations</h3>
+            <div class="table-scroll">
+              <table aria-label="Three-seed validation ablations">
+                <thead><tr><th scope="col">Removed component</th><th scope="col">Metric</th><th scope="col">Unit</th><th scope="col">Full</th><th scope="col">Ablated</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">w/o rescue component</th><td>Rescue recall</td><td>%</td><td>19.85</td><td>13.33</td></tr>
+                  <tr><th scope="row">w/o rescue component</th><td>Net rescue</td><td>per 1,000</td><td>12.41</td><td>7.58</td></tr>
+                  <tr><th scope="row">w/o degradation component</th><td>Erroneous degradation</td><td>per 1,000</td><td>5.09</td><td>8.75</td></tr>
+                  <tr><th scope="row">w/o degradation component</th><td>Selected-candidate success</td><td>%</td><td>94.34</td><td>89.43</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">These are validation-set component ablations, distinct from the diagnostic-scene and test-set experiments.</p>
           </div>
         </div>
       </section>
@@ -313,6 +285,20 @@
           <div class="section-heading">
             <p class="eyebrow">Robot Experiments</p>
             <h2>Simulation and real robot execution pipeline</h2>
+          </div>
+          <p class="body-copy">The real platform uses a UR arm, Allegro Hand, and RealSense D455. Ten common everyday objects are absent from the training data. Single-object tests use ten randomized poses per object. Cluttered tests comprise ten rounds of sequentially grasping and removing all ten targets, with new randomized starting poses each round.</p>
+          <div class="table-block" id="table-v">
+            <h3>Table V. Quantitative real-robot results</h3>
+            <div class="table-scroll">
+              <table aria-label="Table V. Quantitative real-robot results">
+                <thead><tr><th scope="col">Setting</th><th scope="col">Raw execution</th><th scope="col">Raw success</th><th scope="col">SafeAnchor execution</th><th scope="col">SafeAnchor success</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Single object</th><td>0.83</td><td>0.72</td><td>0.92</td><td>0.88</td></tr>
+                  <tr><th scope="row">Cluttered multi-object</th><td>0.67</td><td>0.52</td><td>0.77</td><td>0.69</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="body-copy">Rates are proportions. Each method has 100 target-grasp attempts in each setting. A successful attempt stably lifts the specified target by at least 0.10 m.</p>
           </div>
 
           <div class="media-grid">
@@ -360,18 +346,18 @@
           </div>
 
           <div class="video-section">
-            <h3>Additional real grasp demos</h3>
+            <h3>Real-robot experiments 1-7</h3>
             <p class="body-copy">Hardware videos demonstrate SafeAnchor-Grasp outputs being executed by the UR arm and Allegro dexterous hand.</p>
           </div>
 
-          <div class="single-video" aria-label="Additional real grasp execution videos">
+          <div class="single-video" aria-label="Seven real-robot experiments">
             <figure>
-              <video id="demoVideo" controls muted playsinline preload="metadata" src="assets/videos/demo1.mp4"></video>
-              <figcaption>Real grasp execution</figcaption>
+              <video id="demoVideo" controls muted playsinline preload="metadata" src="assets/videos/1.mp4"></video>
+              <figcaption id="demoCaption" aria-live="polite">Real-robot experiment 1 of 7</figcaption>
             </figure>
-            <div class="single-video__controls" aria-label="Additional video navigation">
-              <button type="button" id="prevDemo" aria-label="Previous additional video">Previous</button>
-              <button type="button" id="nextDemo" aria-label="Next additional video">Next</button>
+            <div class="single-video__controls" aria-label="Real-robot experiment navigation">
+              <button type="button" id="prevDemo" aria-label="Previous experiment video">Previous</button>
+              <button type="button" id="nextDemo" aria-label="Next experiment video">Next</button>
             </div>
           </div>
         </div>
@@ -382,13 +368,14 @@
           <div>
             <p class="eyebrow">Citation</p>
             <h2>BibTeX</h2>
-            <p class="body-copy">Update author and venue metadata before public release.</p>
+            <p class="body-copy">Project manuscript and accompanying experimental results.</p>
           </div>
-          <pre><code>@article{safeanchor_grasp_2026,
-  title = {SafeAnchor-Grasp: Same-Object Safe Enhancement for Dexterous Grasping in Cluttered Multi-Object Scenes},
-  author = {Anonymous Authors},
-  journal = {Manuscript under preparation},
-  year = {2026}
+          <pre><code>@misc{safeanchor_grasp_2026,
+  title = {SafeAnchor-Grasp: An Object Grasp Optimization Method for Cluttered Multi-Object Scenes},
+  author = {Hu, Jiarui and Li, Xingyu and Jiang, Rong and Wang, Zhipeng and Zhou, Yanmin and He, Bin},
+  year = {2026},
+  note = {Manuscript},
+  url = {https://hujiarui2310203.github.io/SafeAnchor-Grasp/}
 }</code></pre>
         </div>
       </section>
@@ -429,13 +416,17 @@
       nextPair.addEventListener("click", () => showVideoPair(activePair + 1));
 
       const demoVideos = [
-        "assets/videos/demo1.mp4",
-        "assets/videos/demo2.mp4",
-        "assets/videos/demo3.mp4",
-        "assets/videos/demo4.mp4"
+        "assets/videos/1.mp4",
+        "assets/videos/2.mp4",
+        "assets/videos/3.mp4",
+        "assets/videos/4.mp4",
+        "assets/videos/5.mp4",
+        "assets/videos/6.mp4",
+        "assets/videos/7.mp4"
       ];
 
       const demoVideo = document.getElementById("demoVideo");
+      const demoCaption = document.getElementById("demoCaption");
       const prevDemo = document.getElementById("prevDemo");
       const nextDemo = document.getElementById("nextDemo");
       let activeDemo = 0;
@@ -444,6 +435,7 @@
         activeDemo = (nextIndex + demoVideos.length) % demoVideos.length;
         demoVideo.pause();
         demoVideo.src = demoVideos[activeDemo];
+        demoCaption.textContent = `Real-robot experiment ${activeDemo + 1} of ${demoVideos.length}`;
         demoVideo.load();
       }
 

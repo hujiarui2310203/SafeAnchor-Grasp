@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "updated": "2026-09-13",
+  "source": {
+    "manuscript": "real_artical92.tex",
+    "sha256": "4672295ed7f81dd03ead9c3fd2f88af9c6bea1a84b3bcd079198f4a2977ed09a",
+    "title": "SafeAnchor-Grasp: An Object Grasp Optimization Method for Cluttered Multi-Object Scenes",
+    "scope": "Reported manuscript aggregates; not per-trial logs or a raw benchmark dataset."
+  },
+  "units": {
+    "success": "proportion unless a field ends in _percent",
+    "gain": "absolute difference in success proportions",
+    "pp": "percentage points",
+    "per_1000": "events per 1,000 evaluated pairs"
+  },
+  "notes": [
+    "Reported values retain manuscript precision. A gain reported from unrounded measurements can differ slightly from subtraction of displayed rounded means.",
+    "The approximately 12% replacement rate applies to the DexGraspNet 2.0 evaluation, not a universal replacement budget.",
+    "DexDiffuser and GenDexGrasp replacement rates are retained as reported in the current manuscript; they have not been recomputed from trial-level records in this update.",
+    "Joint ceilings for DexDiffuser and GenDexGrasp remain unavailable after the success-rate revision; null is not zero.",
+    "The best-10 and best-6 rows are gain-ranked subsets of the same 26 low-success scenes, not separate test sets.",
+    "Training, validation, diagnostic-scene ablations, the 90-scene test, and real-robot experiments are distinct evaluation settings."
+  ],
+  "protocol": {
+    "source": "Sec. IV-A and IV-D",
+    "dataset": "GraspNet-1Billion",
+    "anchor_training_scenes": "0000-0099",
+    "gate_training_scenes": "0000-0089",
+    "gate_validation_scenes": "0090-0099",
+    "test_scenes": "0100-0189",
+    "test_scene_count": 90,
+    "views_per_scene": 256,
+    "test_sample_count": 23040,
+    "simulator": "Isaac Gym",
+    "simulation_success": "Pass the pre-grasp collision check and lift the bound target object by more than 0.10 m.",
+    "real_robot": {
+      "arm": "UR",
+      "hand": "Allegro Hand",
+      "camera": "RealSense D455",
+      "unseen_objects": 10,
+      "attempts_per_method_per_setting": 100,
+      "single_object": "Each of the same ten objects is grasped from ten randomized poses.",
+      "cluttered": "Ten rounds of ten sequential target-grasp attempts. Remove each grasped target, then grasp the next remaining target; randomize all initial object poses between rounds.",
+      "success": "Stably lift the specified target object by at least 0.10 m."
+    }
+  },
+  "generator_adaptation": {
+    "source": "Table I; Sec. IV-B",
+    "rows": [
+      {
+        "generator": "DexDiffuser",
+        "reference": 24,
+        "raw_success": 0.73,
+        "integrated_success": 0.88,
+        "absolute_gain": 0.15,
+        "replacement_rate": 0.98,
+        "joint_ceiling": null
+      },
+      {
+        "generator": "GenDexGrasp",
+        "reference": 21,
+        "raw_success": 0.79,
+        "integrated_success": 0.89,
+        "absolute_gain": 0.1,
+        "replacement_rate": 0.93,
+        "joint_ceiling": null
+      },
+      {
+        "generator": "DexGraspNet 2.0",
+        "reference": 23,
+        "raw_success": 0.89,
+        "integrated_success": 0.92,
+        "absolute_gain": 0.03,
+        "replacement_rate": 0.12,
+        "joint_ceiling": 0.95
+      }
+    ]
+  },
+  "overall_performance": {
+    "source": "Table II; Sec. IV-C1",
+    "baseline": "DexGraspNet 2.0",
+    "rows": [
+      {
+        "set": "GraspNet-1Billion",
+        "scenes": 90,
+        "raw_success": 0.8921,
+        "safeanchor_success": 0.9221,
+        "reported_gain": 0.0301
+      },
+      {
+        "set": "Low-success scenes",
+        "scenes": 26,
+        "raw_success": 0.7237,
+        "safeanchor_success": 0.8274,
+        "reported_gain": 0.1037
+      },
+      {
+        "set": "Best-10 low-success",
+        "scenes": 10,
+        "raw_success": 0.6566,
+        "safeanchor_success": 0.9008,
+        "reported_gain": 0.2441
+      },
+      {
+        "set": "Best low-success cases",
+        "scenes": 6,
+        "raw_success": 0.6113,
+        "safeanchor_success": 0.9277,
+        "reported_gain": 0.3164
+      }
+    ]
+  },
+  "bootstrap_intervals": {
+    "source": "Sec. IV-C1",
+    "method": "Scene-level paired bootstrap",
+    "confidence_level": 0.95,
+    "rows": [
+      {
+        "set": "All 90 scenes",
+        "reported_gain": 0.0301,
+        "lower": 0.0138,
+        "upper": 0.0492
+      },
+      {
+        "set": "26 low-success scenes",
+        "reported_gain": 0.1037,
+        "lower": 0.055,
+        "upper": 0.1587
+      }
+    ]
+  },
+  "scene_examples": {
+    "source": "Sec. IV-C1",
+    "rows": [
+      {
+        "scene": "0117",
+        "raw_success": 0.4727,
+        "safeanchor_success": 0.957
+      },
+      {
+        "scene": "0114",
+        "raw_success": 0.6328,
+        "safeanchor_success": 0.9922
+      },
+      {
+        "scene": "0115",
+        "raw_success": 0.6563,
+        "safeanchor_success": 0.9766
+      },
+      {
+        "scene": "0121",
+        "raw_success": 0.5195,
+        "safeanchor_success": 0.7734
+      }
+    ]
+  },
+  "graspnet_benchmark": {
+    "source": "Table III",
+    "success_unit": "percent",
+    "rows": [
+      {
+        "method": "HGC-Net",
+        "reference": 33,
+        "ratio": "1",
+        "dense_percent": 46,
+        "random_percent": 37.8,
+        "loose_percent": 26.7
+      },
+      {
+        "method": "GraspTTA",
+        "reference": 29,
+        "ratio": "1",
+        "dense_percent": 62.5,
+        "random_percent": 54.1,
+        "loose_percent": 42.8
+      },
+      {
+        "method": "ISAGrasp",
+        "reference": 34,
+        "ratio": "1",
+        "dense_percent": 63.4,
+        "random_percent": 60.7,
+        "loose_percent": 51.4
+      },
+      {
+        "method": "DexGraspNet 2.0",
+        "reference": 23,
+        "ratio": "1/1000",
+        "dense_percent": 89.2,
+        "random_percent": 84.5,
+        "loose_percent": 81.9
+      },
+      {
+        "method": "CADGrasp",
+        "reference": 31,
+        "ratio": "1/1000",
+        "dense_percent": 89.5,
+        "random_percent": 87.2,
+        "loose_percent": 81.6
+      },
+      {
+        "method": "SafeAnchor-Grasp",
+        "reference": null,
+        "ratio": "1/1000",
+        "dense_percent": 92.2,
+        "random_percent": 90.1,
+        "loose_percent": 85.6
+      }
+    ]
+  },
+  "candidate_ceilings": {
+    "source": "Sec. IV-A, IV-C2 and Table IV-B",
+    "rows": [
+      {
+        "split": "Training",
+        "pairs": 23028,
+        "same_target_ceiling": 0.9819
+      },
+      {
+        "split": "Validation",
+        "pairs": 2552,
+        "same_target_ceiling": 0.9835
+      },
+      {
+        "split": "Test",
+        "pairs": 23040,
+        "same_target_ceiling": 0.9481
+      }
+    ]
+  },
+  "selection_behavior": {
+    "source": "Sec. IV-C2",
+    "baseline": "DexGraspNet 2.0",
+    "selected_outputs": 2764,
+    "test_outputs": 23040,
+    "reported_replacement_percent": 12,
+    "same_target_preserved": true
+  },
+  "anchorlift_ablation": {
+    "source": "Table IV-A",
+    "evaluation": "Diagnostic scenes",
+    "rows": [
+      {
+        "variant": "Full AnchorLift",
+        "success_percent": 57,
+        "change_vs_full_pp": 0
+      },
+      {
+        "variant": "w/o SPS",
+        "success_percent": 46.1,
+        "change_vs_full_pp": -10.9
+      },
+      {
+        "variant": "w/o target-local point cloud",
+        "success_percent": 42.7,
+        "change_vs_full_pp": -14.3
+      },
+      {
+        "variant": "w/o raw-grasp condition",
+        "success_percent": 39.4,
+        "change_vs_full_pp": -17.6
+      }
+    ]
+  },
+  "gate_policy_ablation": {
+    "source": "Table IV-B",
+    "baseline": "DexGraspNet 2.0",
+    "rows": [
+      {
+        "policy": "Raw Grasp (never intervene)",
+        "test_success_percent": 89.21,
+        "hard_scene_success_percent": 72.37,
+        "replacement_percent": 0,
+        "oracle": false
+      },
+      {
+        "policy": "AnchorLift direct replacement (always intervene)",
+        "test_success_percent": 84.31,
+        "hard_scene_success_percent": 64.02,
+        "replacement_percent": 100,
+        "oracle": false
+      },
+      {
+        "policy": "Same-target Raw-or-AnchorLift ceiling",
+        "test_success_percent": 94.81,
+        "hard_scene_success_percent": null,
+        "replacement_percent": null,
+        "oracle": true
+      },
+      {
+        "policy": "SafeAnchor-Grasp (learned limited intervention)",
+        "test_success_percent": 92.21,
+        "hard_scene_success_percent": 82.74,
+        "replacement_percent": 12,
+        "oracle": false
+      }
+    ]
+  },
+  "gate_validation_ablation": {
+    "source": "Sec. IV-C3",
+    "evaluation": "Three-seed validation-set ablations",
+    "rows": [
+      {
+        "ablation": "w/o rescue component",
+        "metric": "Rescue recall",
+        "unit": "percent",
+        "full": 19.85,
+        "ablated": 13.33
+      },
+      {
+        "ablation": "w/o rescue component",
+        "metric": "Net rescue",
+        "unit": "per_1000",
+        "full": 12.41,
+        "ablated": 7.58
+      },
+      {
+        "ablation": "w/o degradation component",
+        "metric": "Erroneous degradation",
+        "unit": "per_1000",
+        "full": 5.09,
+        "ablated": 8.75
+      },
+      {
+        "ablation": "w/o degradation component",
+        "metric": "Selected-candidate success",
+        "unit": "percent",
+        "full": 94.34,
+        "ablated": 89.43
+      }
+    ]
+  },
+  "real_robot_results": {
+    "source": "Table V; Sec. IV-D",
+    "attempts_per_method_per_setting": 100,
+    "rows": [
+      {
+        "setting": "Single object",
+        "raw_execution": 0.83,
+        "raw_success": 0.72,
+        "safeanchor_execution": 0.92,
+        "safeanchor_success": 0.88
+      },
+      {
+        "setting": "Cluttered multi-object",
+        "raw_execution": 0.67,
+        "raw_success": 0.52,
+        "safeanchor_execution": 0.77,
+        "safeanchor_success": 0.69
+      }
+    ]
+  },
+  "videos": [
+    {
+      "number": 1,
+      "file": "assets/videos/1.mp4",
+      "caption": "Real-robot experiment 1"
+    },
+    {
+      "number": 2,
+      "file": "assets/videos/2.mp4",
+      "caption": "Real-robot experiment 2"
+    },
+    {
+      "number": 3,
+      "file": "assets/videos/3.mp4",
+      "caption": "Real-robot experiment 3"
+    },
+    {
+      "number": 4,
+      "file": "assets/videos/4.mp4",
+      "caption": "Real-robot experiment 4"
+    },
+    {
+      "number": 5,
+      "file": "assets/videos/5.mp4",
+      "caption": "Real-robot experiment 5"
+    },
+    {
+      "number": 6,
+      "file": "assets/videos/6.mp4",
+      "caption": "Real-robot experiment 6"
+    },
+    {
+      "number": 7,
+      "file": "assets/videos/7.mp4",
+      "caption": "Real-robot experiment 7"
+    }
+  ]
+}
